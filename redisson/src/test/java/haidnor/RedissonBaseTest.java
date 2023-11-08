@@ -37,6 +37,7 @@ public abstract class RedissonBaseTest {
 
     public static RedissonClient createInstance() {
         Config config = createConfig();
+        // 创建 Redisson
         return Redisson.create(config);
     }
 

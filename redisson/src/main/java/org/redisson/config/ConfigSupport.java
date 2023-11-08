@@ -197,8 +197,12 @@ public class ConfigSupport {
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());
             cm = new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), serviceManager);
-        } else if (configCopy.getSingleServerConfig() != null) {
+        }
+        // redis 单节点
+        else if (configCopy.getSingleServerConfig() != null) {
+            // 校验配置
             validate(configCopy.getSingleServerConfig());
+            // 单点连接管理器
             cm = new SingleConnectionManager(configCopy.getSingleServerConfig(), serviceManager);
         } else if (configCopy.getSentinelServersConfig() != null) {
             validate(configCopy.getSentinelServersConfig());
@@ -227,6 +231,7 @@ public class ConfigSupport {
     }
 
     private static void validate(SingleServerConfig config) {
+        // 连接池数量 < 最小空闲Redis连接数
         if (config.getConnectionPoolSize() < config.getConnectionMinimumIdleSize()) {
             throw new IllegalArgumentException("connectionPoolSize can't be lower than connectionMinimumIdleSize");
         }

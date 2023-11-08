@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,9 +43,7 @@ import java.security.KeyStore;
 import java.util.Arrays;
 
 /**
- * 
  * @author Nikita Koksharov
- *
  */
 public class RedisChannelInitializer extends ChannelInitializer<Channel> {
 
@@ -56,57 +54,80 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
     private final Type type;
     private final ConnectionWatchdog connectionWatchdog;
     private final PingConnectionHandler pingConnectionHandler;
-    
+
     public RedisChannelInitializer(Bootstrap bootstrap, RedisClientConfig config, RedisClient redisClient, ChannelGroup channels, Type type) {
         super();
         this.config = config;
         this.redisClient = redisClient;
         this.type = type;
-        
+
+        // 连接检测处理器 (ChannelInboundHandler)
         if (config.getPingConnectionInterval() > 0) {
             pingConnectionHandler = new PingConnectionHandler(config);
         } else {
             pingConnectionHandler = null;
         }
+        // 连接看门狗 ChannelInboundHandler
         connectionWatchdog = new ConnectionWatchdog(bootstrap, channels, config.getTimer());
     }
-    
+
+    /**
+     * 初始化连接处理器
+     * <p>
+     * IN       RedisConnectionHandler      连接处理器
+     * IN       ConnectionWatchdog          连接看门狗
+     * OUT      CommandEncoder              指令编码器
+     * OUT      CommandBatchEncoder         指令批量编码器
+     * IN&OUT   CommandsQueue               指令队列
+     * IN       PingConnectionHandler       连接检测处理器
+     * IN       CommandDecoder              指令解码器
+     * IN&OUT   ErrorsLoggingHandler        异常日志处理器
+     */
     @Override
     protected void initChannel(Channel ch) throws Exception {
+        // 初始化 ssl 连接
         initSsl(config, ch);
-        
+
         if (type == Type.PLAIN) {
+            // 连接处理器 IN
             ch.pipeline().addLast(new RedisConnectionHandler(redisClient));
         } else {
             ch.pipeline().addLast(new RedisPubSubConnectionHandler(redisClient));
         }
 
-        ch.pipeline().addLast(
-            connectionWatchdog,
-            new CommandEncoder(config.getCommandMapper()),
-            CommandBatchEncoder.INSTANCE);
+        // 连接看门狗 IN
+        ch.pipeline().addLast(connectionWatchdog);
+        // 请求指令编码器 OUT
+        ch.pipeline().addLast(new CommandEncoder(config.getCommandMapper()));
+        // 命令批量编码器 OUT
+        ch.pipeline().addLast(CommandBatchEncoder.INSTANCE);
+
 
         if (type == Type.PLAIN) {
+            // 指令队列 (IN & OUT)
             ch.pipeline().addLast(new CommandsQueue());
         } else {
             ch.pipeline().addLast(new CommandsQueuePubSub());
         }
 
         if (pingConnectionHandler != null) {
+            //  连接检测处理器 IN
             ch.pipeline().addLast(pingConnectionHandler);
         }
-        
+
         if (type == Type.PLAIN) {
+            // 命令解码器 IN
             ch.pipeline().addLast(new CommandDecoder(config.getAddress().getScheme()));
         } else {
             ch.pipeline().addLast(new CommandPubSubDecoder(config));
         }
 
+        // 异常日志处理器 (IN & OUT) 重写 exceptionCaught 方法
         ch.pipeline().addLast(new ErrorsLoggingHandler());
 
         config.getNettyHook().afterChannelInitialization(ch);
     }
-    
+
     private void initSsl(RedisClientConfig config, Channel ch) throws GeneralSecurityException, IOException {
         if (!config.getAddress().isSsl()) {
             return;
@@ -116,7 +137,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         if (config.getSslProvider() == SslProvider.OPENSSL) {
             provided = io.netty.handler.ssl.SslProvider.OPENSSL;
         }
-        
+
         SslContextBuilder sslContextBuilder = SslContextBuilder.forClient().sslProvider(provided);
         sslContextBuilder.protocols(config.getSslProtocols());
         if (config.getSslCiphers() != null) {
@@ -125,7 +146,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
 
         if (config.getSslTruststore() != null) {
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            
+
             InputStream stream = config.getSslTruststore().openStream();
             try {
                 char[] password = null;
@@ -136,7 +157,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             } finally {
                 stream.close();
             }
-            
+
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             trustManagerFactory.init(keyStore);
             sslContextBuilder.trustManager(trustManagerFactory);
@@ -145,9 +166,9 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             sslContextBuilder.trustManager(config.getSslTrustManagerFactory());
         }
 
-        if (config.getSslKeystore() != null){
+        if (config.getSslKeystore() != null) {
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            
+
             InputStream stream = config.getSslKeystore().openStream();
             char[] password = null;
             if (config.getSslKeystorePassword() != null) {
@@ -158,7 +179,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             } finally {
                 stream.close();
             }
-            
+
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             keyManagerFactory.init(keyStore, password);
             sslContextBuilder.keyManager(keyManagerFactory);
@@ -166,7 +187,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         if (config.getSslKeyManagerFactory() != null) {
             sslContextBuilder.keyManager(config.getSslKeyManagerFactory());
         }
-        
+
         SSLParameters sslParams = new SSLParameters();
         if (config.isSslEnableEndpointIdentification()) {
             sslParams.setEndpointIdentificationAlgorithm("HTTPS");
@@ -181,23 +202,23 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         if (hostname == null || NetUtil.createByteArrayFromIpAddressString(hostname) != null) {
             hostname = config.getAddress().getHost();
         }
-        
+
         SSLEngine sslEngine = sslContext.newEngine(ch.alloc(), hostname, config.getAddress().getPort());
         sslEngine.setSSLParameters(sslParams);
-        
+
         SslHandler sslHandler = new SslHandler(sslEngine);
         ch.pipeline().addLast(sslHandler);
         ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-            
+
             volatile boolean sslInitDone;
-            
+
             @Override
             public void channelActive(ChannelHandlerContext ctx) throws Exception {
                 if (sslInitDone) {
                     super.channelActive(ctx);
                 }
             }
-            
+
             @Override
             public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
                 if (!sslInitDone && evt instanceof SslHandshakeCompletionEvent) {
@@ -217,5 +238,5 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
 
         });
     }
-    
+
 }

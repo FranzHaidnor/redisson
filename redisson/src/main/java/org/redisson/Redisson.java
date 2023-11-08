@@ -64,15 +64,22 @@ public class Redisson implements RedissonClient {
 
     protected Redisson(Config config) {
         this.config = config;
+        // 复制配置信息对象
         Config configCopy = new Config(config);
 
+        // 创建连接管理器
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
+        // Redisson 对象建造者
         RedissonObjectBuilder objectBuilder = null;
+        // 配置选项指示是否启用Redisson参考功能。 默认值为true
         if (config.isReferenceEnabled()) {
             objectBuilder = new RedissonObjectBuilder(this);
         }
+        // 命令异步执行器
         commandExecutor = new CommandAsyncService(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.DEFAULT);
+        // 定时删除执行器
         evictionScheduler = new EvictionScheduler(commandExecutor);
+        // 写后服务
         writeBehindService = new WriteBehindService(commandExecutor);
     }
 
