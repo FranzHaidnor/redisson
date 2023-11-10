@@ -20,13 +20,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 
+ * 指令数据
  * @author Nikita Koksharov
  *
  */
 public class CommandsData implements QueueCommand {
-
+    // 命令集合
     private final List<CommandData<?, ?>> commands;
+    // 附加命令集合
     private final List<CommandData<?, ?>> attachedCommands;
     private final CompletableFuture<Void> promise;
     private final boolean skipResult;

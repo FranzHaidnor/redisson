@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * LRU（最近最少使用）缓存。
  * LRU (least recently used) cache.
  * 
  * @author Nikita Koksharov

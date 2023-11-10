@@ -35,17 +35,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
- *
+ * redis 主节点连接管理器
  * @author Nikita Koksharov
- *
  */
 public class MasterSlaveConnectionManager implements ConnectionManager {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    // 最大槽位
     public static final int MAX_SLOT = 16384;
 
+    // 集群槽位范围
     protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT-1);
-
-    private final Logger log = LoggerFactory.getLogger(getClass());
 
     protected DNSMonitor dnsMonitor;
 
@@ -66,6 +67,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private boolean lastAttempt;
 
     public MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, ServiceManager serviceManager) {
+        // 服务管理者
         this.serviceManager = serviceManager;
 
         if (cfg instanceof MasterSlaveServersConfig) {
@@ -207,8 +209,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
+    // 连接 Redis
     protected void doConnect() {
         try {
+            // 节点没有被使使用过
             if (config.isSlaveNotUsed()) {
                 masterSlaveEntry = new SingleEntry(this, serviceManager.getConnectionWatcher(), config);
             } else {

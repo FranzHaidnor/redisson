@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * 哨兵连接管理器
  * @author Nikita Koksharov
  *
  */

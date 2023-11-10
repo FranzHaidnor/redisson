@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 /**
+ * Redis协议命令编码器
  * Redis protocol command encoder
  *
  * @author Nikita Koksharov
@@ -59,10 +60,13 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    // 参数前缀
     private static final char ARGS_PREFIX = '*';
+    // 字节前缀
     private static final char BYTES_PREFIX = '$';
+    // 回车,换行
     private static final byte[] CRLF = "\r\n".getBytes();
-
+    // 长字符串缓存大小
     private static final Integer LONG_TO_STRING_CACHE_SIZE = 1000;
 
     private static final List<byte[]> LONG_TO_STRING_CACHE = LongStream.range(0, LONG_TO_STRING_CACHE_SIZE)

@@ -30,24 +30,45 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public interface ConnectionManager {
+public interface ConnectionManager { // 连接管理器
 
+    /**
+     * 创建连接
+     */
     void connect() throws InterruptedException;
 
+    /**
+     * 获取订阅服务
+     */
     PublishSubscribeService getSubscribeService();
-    
+
+    /**
+     * 获取最后一个集群节点
+     */
     RedisURI getLastClusterNode();
-    
+
+    /**
+     * 是否为集群模式
+     */
     boolean isClusterMode();
 
+    /**
+     * 计算槽
+     */
     int calcSlot(String key);
 
     int calcSlot(ByteBuf key);
 
     int calcSlot(byte[] key);
 
+    /**
+     * 获取连接实例集合
+     */
     Collection<MasterSlaveEntry> getEntrySet();
 
+    /**
+     * 获取连接实例
+     */
     MasterSlaveEntry getEntry(String name);
 
     MasterSlaveEntry getWriteEntry(int slot);
@@ -58,16 +79,31 @@ public interface ConnectionManager {
 
     MasterSlaveEntry getEntry(RedisURI addr);
 
+    /**
+     * 创建 RedisClient
+     */
     RedisClient createClient(NodeType type, InetSocketAddress address, RedisURI uri, String sslHostname);
     
     RedisClient createClient(NodeType type, RedisURI address, String sslHostname);
 
+    /**
+     * 通过 RedisClient 获取 MasterSlaveEntry
+     */
     MasterSlaveEntry getEntry(RedisClient redisClient);
-    
+
+    /**
+     * 关闭连接
+     */
     void shutdown();
 
+    /**
+     * 关闭连接
+     */
     void shutdown(long quietPeriod, long timeout, TimeUnit unit);
-    
+
+    /**
+     * 获取连接管理器
+     */
     ServiceManager getServiceManager();
 
 }

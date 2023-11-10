@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,39 +45,49 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- *
+ * 主从实例
  * @author Nikita Koksharov
  *
  */
 public class MasterSlaveEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
-
+    // 负载均衡管理器
     LoadBalancerManager slaveBalancer;
+    // 客户端连接实例
     ClientConnectionsEntry masterEntry;
-
+    // 引用计数器
     int references;
-    
+
+    // 主从服务配置
     final MasterSlaveServersConfig config;
+    // 连接管理器
     final ConnectionManager connectionManager;
 
+    // master 节点的连接池 (写连接池, 只有 master 节点能直接写)
     final MasterConnectionPool writeConnectionPool;
-    
+    // 发布订阅连接池
     final MasterPubSubConnectionPool pubSubConnectionPool;
 
+    // 原子类, 存放一个 boolean 值判断是否活跃
     final AtomicBoolean active = new AtomicBoolean(true);
+
+    // 空闲连接观察者
     final IdleConnectionWatcher idleConnectionWatcher;
 
+    // 没有发布订阅连接
     final AtomicBoolean noPubSubSlaves = new AtomicBoolean();
 
-    public MasterSlaveEntry(ConnectionManager connectionManager, IdleConnectionWatcher idleConnectionWatcher,
-                            MasterSlaveServersConfig config) {
+    public MasterSlaveEntry(ConnectionManager connectionManager, IdleConnectionWatcher idleConnectionWatcher, MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
         this.config = config;
         this.idleConnectionWatcher = idleConnectionWatcher;
 
+        // 负载均衡管理器
         slaveBalancer = new LoadBalancerManager(config, connectionManager, this);
+        // 主节点连接池
         writeConnectionPool = new MasterConnectionPool(config, connectionManager, this);
+        // 发布订阅连接池
         pubSubConnectionPool = new MasterPubSubConnectionPool(config, connectionManager, this);
     }
 
@@ -85,6 +95,9 @@ public class MasterSlaveEntry {
         return config;
     }
 
+    /**
+     * 初始化从节点连接负载均衡器
+     */
     public CompletableFuture<Void> initSlaveBalancer(Collection<RedisURI> disconnectedNodes) {
         return initSlaveBalancer(disconnectedNodes, null);
     }
@@ -171,7 +184,7 @@ public class MasterSlaveEntry {
         if (entry == null) {
             return false;
         }
-        
+
         return slaveDown(entry);
     }
 
@@ -201,7 +214,7 @@ public class MasterSlaveEntry {
         // add master as slave if no more slaves available
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
-                    && slaveBalancer.getAvailableClients() == 0) {
+                && slaveBalancer.getAvailableClients() == 0) {
             slaveBalancer.unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM).thenAccept(r -> {
                 if (r) {
                     log.info("master {} used as slave", masterEntry.getClient().getAddr());
@@ -276,7 +289,7 @@ public class MasterSlaveEntry {
             });
         }, config.getFailedSlaveReconnectionInterval(), TimeUnit.MILLISECONDS);
     }
-    
+
     public CompletableFuture<Boolean> slaveDownAsync(ClientConnectionsEntry entry, FreezeReason freezeReason) {
         ClientConnectionsEntry e = slaveBalancer.freeze(entry, freezeReason);
         if (e == null) {
@@ -294,7 +307,7 @@ public class MasterSlaveEntry {
         // add master as slave if no more slaves available
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
-                    && slaveBalancer.getAvailableClients() == 0) {
+                && slaveBalancer.getAvailableClients() == 0) {
             CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
             return f.thenApply(value -> {
                 if (value) {
@@ -332,7 +345,7 @@ public class MasterSlaveEntry {
 
     public void nodeDown(ClientConnectionsEntry entry) {
         entry.resetConnectionsSemaphore();
-        
+
         for (RedisConnection connection : entry.getAllConnections()) {
             connection.closeAsync();
             reattachBlockingQueue(connection.getCurrentCommand());
@@ -351,7 +364,7 @@ public class MasterSlaveEntry {
     private void reattachBlockingQueue(CommandData<?, ?> commandData) {
         if (commandData == null
                 || !commandData.isBlockingCommand()
-                    || commandData.getPromise().isDone()) {
+                || commandData.getPromise().isDone()) {
             return;
         }
 
@@ -359,7 +372,7 @@ public class MasterSlaveEntry {
         for (int i = 0; i < commandData.getParams().length; i++) {
             Object param = commandData.getParams()[i];
             if ("STREAMS".equals(param)) {
-                key = (String) commandData.getParams()[i+1];
+                key = (String) commandData.getParams()[i + 1];
                 break;
             }
         }
@@ -401,7 +414,7 @@ public class MasterSlaveEntry {
             });
         });
     }
-    
+
     public boolean hasSlave(RedisClient redisClient) {
         return slaveBalancer.contains(redisClient);
     }
@@ -409,7 +422,7 @@ public class MasterSlaveEntry {
     public boolean hasSlave(InetSocketAddress addr) {
         return slaveBalancer.contains(addr);
     }
-    
+
     public boolean hasSlave(RedisURI addr) {
         return slaveBalancer.contains(addr);
     }
@@ -425,7 +438,7 @@ public class MasterSlaveEntry {
     public CompletableFuture<Void> addSlave(RedisURI address) {
         return addSlave(address, false, NodeType.SLAVE, null);
     }
-    
+
     public CompletableFuture<Void> addSlave(InetSocketAddress address, RedisURI uri) {
         return addSlave(address, uri, false, NodeType.SLAVE, null);
     }
@@ -465,7 +478,7 @@ public class MasterSlaveEntry {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
-    
+
     public CompletableFuture<Void> addSlave(RedisURI address, boolean freezed, NodeType nodeType, String sslHostname) {
         RedisClient client = connectionManager.createClient(nodeType, address, sslHostname);
         return addSlave(client, freezed, nodeType);
@@ -474,7 +487,7 @@ public class MasterSlaveEntry {
     public Collection<ClientConnectionsEntry> getAllEntries() {
         return slaveBalancer.getEntries();
     }
-    
+
     public ClientConnectionsEntry getEntry(RedisClient redisClient) {
         return slaveBalancer.getEntry(redisClient);
     }
@@ -501,7 +514,7 @@ public class MasterSlaveEntry {
             return CompletableFuture.completedFuture(r);
         });
     }
-    
+
     public CompletableFuture<Boolean> slaveUpAsync(RedisURI address, FreezeReason freezeReason) {
         noPubSubSlaves.set(false);
         CompletableFuture<Boolean> f = slaveBalancer.unfreezeAsync(address, freezeReason);
@@ -567,16 +580,16 @@ public class MasterSlaveEntry {
      * Freeze slave with <code>redis(s)://host:port</code> from slaves list.
      * Re-attach pub/sub listeners from it to other slave.
      * Shutdown old master client.
-     * 
+     *
      * @param address of Redis
-     * @return client 
+     * @return client
      */
     public CompletableFuture<RedisClient> changeMaster(RedisURI address) {
         ClientConnectionsEntry oldMaster = masterEntry;
         CompletableFuture<RedisClient> future = setupMasterEntry(address);
         return changeMaster(address, oldMaster, future);
     }
-    
+
     public CompletableFuture<RedisClient> changeMaster(InetSocketAddress address, RedisURI uri) {
         ClientConnectionsEntry oldMaster = masterEntry;
         CompletableFuture<RedisClient> future = setupMasterEntry(address, uri);
@@ -585,7 +598,7 @@ public class MasterSlaveEntry {
 
 
     private CompletableFuture<RedisClient> changeMaster(RedisURI address, ClientConnectionsEntry oldMaster,
-                              CompletableFuture<RedisClient> future) {
+                                                        CompletableFuture<RedisClient> future) {
         return future.whenComplete((newMasterClient, e) -> {
             if (e != null) {
                 if (oldMaster != masterEntry) {
@@ -597,7 +610,7 @@ public class MasterSlaveEntry {
                 log.error("Unable to change master from: {} to: {}", oldMaster.getClient().getAddr(), address, e);
                 return;
             }
-            
+
             writeConnectionPool.remove(oldMaster);
             pubSubConnectionPool.remove(oldMaster);
 
@@ -652,7 +665,7 @@ public class MasterSlaveEntry {
     public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisURI addr) {
         return slaveBalancer.getConnection(command, addr);
     }
-    
+
     public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisClient client) {
         if (config.getReadMode() == ReadMode.MASTER) {
             return connectionWriteOp(command);

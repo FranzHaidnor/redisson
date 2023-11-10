@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,16 +25,18 @@ import javax.net.ssl.TrustManagerFactory;
 import java.net.URL;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  * @param <T> config type
  */
 public class BaseConfig<T extends BaseConfig<T>> {
-    
+
     private static final Logger log = LoggerFactory.getLogger("config");
 
     /**
+     * 如果池连接在超时时间内未使用，并且当前连接数大于最小空闲连接池大小，则它将关闭并从池中删除。值以毫秒为单位。
+     *
      * If pooled connection not used for a <code>timeout</code> time
      * and current connections amount bigger than minimum idle connections pool size,
      * then it will closed and removed from pool.
@@ -44,6 +46,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     private int idleConnectionTimeout = 10000;
 
     /**
+     * 连接到任何 Redis 服务器时超时。值以毫秒为单位。
      * Timeout during connecting to any Redis server.
      * Value in milliseconds.
      *
@@ -51,47 +54,77 @@ public class BaseConfig<T extends BaseConfig<T>> {
     private int connectTimeout = 10000;
 
     /**
+     * Redis服务器响应超时。 Redis 命令发送成功后开始倒计时。值以毫秒为单位。
      * Redis server response timeout. Starts to countdown when Redis command was succesfully sent.
      * Value in milliseconds.
-     *
      */
     private int timeout = 3000;
 
+    /**
+     * 订阅超时
+     */
     private int subscriptionTimeout = 7500;
 
+    /**
+     * 重试尝试的次数
+     */
     private int retryAttempts = 3;
 
+    /**
+     * 重试间隔
+     */
     private int retryInterval = 1500;
 
     /**
+     * Redis 身份验证的密码。如果不需要则应为 null
      * Password for Redis authentication. Should be null if not needed
      */
     private String password;
 
+    /**
+     * redis 用户名
+     */
     private String username;
 
+    /**
+     * 凭证解析器
+     */
     private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
 
     /**
+     * 每个 Redis 连接的订阅数限制(默认5)
      * Subscriptions per Redis connection limit
      */
     private int subscriptionsPerConnection = 5;
 
     /**
+     * 客户端连接名称
      * Name of client connection
      */
     private String clientName;
 
+    /**
+     * ssl 启用端点识别
+     */
     private boolean sslEnableEndpointIdentification = true;
-    
+
+    /**
+     * SSL提供商
+     */
     private SslProvider sslProvider = SslProvider.JDK;
-    
+
+    /**
+     * ssl 信任库
+     */
     private URL sslTruststore;
-    
+
+    /**
+     * ssl 信任库密码
+     */
     private String sslTruststorePassword;
-    
+
     private URL sslKeystore;
-    
+
     private String sslKeystorePassword;
 
     private String[] sslProtocols;
@@ -102,24 +135,46 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     private KeyManagerFactory sslKeyManagerFactory;
 
+    /**
+     * ping 连接间隔
+     */
     private int pingConnectionInterval = 30000;
 
+    /**
+     * 连接是否存货
+     */
     private boolean keepAlive;
 
+    /**
+     * tcp 保持活动计数
+     */
     private int tcpKeepAliveCount;
 
+    /**
+     * tcp 保持活动空闲数量
+     */
     private int tcpKeepAliveIdle;
 
+    /**
+     * tcp 保持活动间隔
+     */
     private int tcpKeepAliveInterval;
 
+    /**
+     * TCP 用户超时
+     */
     private int tcpUserTimeout;
 
+    /**
+     * TCP 无延迟
+     */
     private boolean tcpNoDelay = true;
 
     private NameMapper nameMapper = NameMapper.direct();
 
+    // 使用 CommandMapper 接口的静态方法创建 CommandMapper
     private CommandMapper commandMapper = CommandMapper.direct();
-    
+
     BaseConfig() {
     }
 
@@ -229,7 +284,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines time interval for another one attempt send Redis command 
+     * Defines time interval for another one attempt send Redis command
      * if it hasn't been sent already.
      * <p>
      * Default is <code>1500</code> milliseconds
@@ -302,7 +357,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * Timeout during connecting to any Redis server.
      * <p>
      * Default is <code>10000</code> milliseconds.
-     * 
+     *
      * @param connectTimeout timeout in milliseconds
      * @return config
      */
@@ -342,7 +397,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * Enables SSL endpoint identification.
      * <p>
      * Default is <code>true</code>
-     * 
+     *
      * @param sslEnableEndpointIdentification boolean value
      * @return config
      */
@@ -359,7 +414,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * Defines SSL provider used to handle SSL connections.
      * <p>
      * Default is <code>JDK</code>
-     * 
+     *
      * @param sslProvider ssl provider
      * @return config
      */
@@ -373,7 +428,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines path to SSL truststore 
+     * Defines path to SSL truststore
      * <p>
      * Default is <code>null</code>
      *
@@ -465,7 +520,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <code>0</code> means disable.
      * <p>
      * Default is <code>30000</code>
-     * 
+     *
      * @param pingConnectionInterval time in milliseconds
      * @return config
      */
@@ -482,7 +537,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * Enables TCP keepAlive for connection
      * <p>
      * Default is <code>false</code>
-     * 
+     *
      * @param keepAlive boolean value
      * @return config
      */
@@ -563,7 +618,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * Enables TCP noDelay for connection
      * <p>
      * Default is <code>true</code>
-     * 
+     *
      * @param tcpNoDelay boolean value
      * @return config
      */

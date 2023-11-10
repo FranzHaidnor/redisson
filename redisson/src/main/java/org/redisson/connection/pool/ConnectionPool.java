@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,8 +38,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 连接池
  * Base connection pool class 
- * 
+ *
  * @author Nikita Koksharov
  *
  * @param <T> - connection type
@@ -143,6 +144,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         });
     }
 
+    // 获取连接
     protected CompletableFuture<Void> acquireConnection(ClientConnectionsEntry entry, RedisCommand<?> command) {
         return entry.acquireConnection(command);
     }
@@ -151,9 +153,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     public CompletableFuture<T> get(RedisCommand<?> command) {
         List<ClientConnectionsEntry> entriesCopy = new LinkedList<ClientConnectionsEntry>(entries);
-        for (Iterator<ClientConnectionsEntry> iterator = entriesCopy.iterator(); iterator.hasNext();) {
+        for (Iterator<ClientConnectionsEntry> iterator = entriesCopy.iterator(); iterator.hasNext(); ) {
             ClientConnectionsEntry entry = iterator.next();
-            if (!((!entry.isFreezed() || entry.isMasterForRead()) 
+            if (!((!entry.isFreezed() || entry.isMasterForRead())
                     && isHealthy(entry))) {
                 iterator.remove();
             }
@@ -162,7 +164,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy, command);
             return acquireConnection(command, entry);
         }
-        
+
         List<InetSocketAddress> failed = new LinkedList<>();
         List<InetSocketAddress> freezed = new LinkedList<>();
         for (ClientConnectionsEntry entry : entries) {
@@ -205,7 +207,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         });
         return result;
     }
-        
+
     private boolean isHealthy(ClientConnectionsEntry entry) {
         if (entry.getNodeType() == NodeType.SLAVE && entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
             return false;

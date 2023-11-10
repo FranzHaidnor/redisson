@@ -83,7 +83,7 @@ public class RedissonObjectBuilder {
             return customCodecMethod;
         }
     }
-    
+    // 参考编解码器提供商
     private final ReferenceCodecProvider codecProvider = new DefaultReferenceCodecProvider();
     
     public RedissonObjectBuilder(RedissonClient redisson) {

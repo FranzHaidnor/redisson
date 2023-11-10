@@ -26,11 +26,17 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
  * @param <R> return type
  */
 public class RedisCommand<R> {
-
+    /**
+     * Redis 命令的名称
+     */
     private final String name;
+    /**
+     * 子名称
+     */
     private final String subName;
-
+    // 重播多解码器
     private final MultiDecoder<R> replayMultiDecoder;
+    // 转换器
     Convertor<R> convertor = new EmptyConvertor<R>();
 
     /**

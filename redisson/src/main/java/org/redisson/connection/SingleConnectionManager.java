@@ -31,6 +31,9 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         super(create(cfg), serviceManager);
     }
 
+    /**
+     * 创建主从服务配置对象 MasterSlaveServersConfig
+     */
     private static MasterSlaveServersConfig create(SingleServerConfig cfg) {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         

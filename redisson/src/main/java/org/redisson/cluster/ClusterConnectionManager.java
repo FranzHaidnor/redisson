@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 
 /**
- * 
+ * 集群连接管理器
  * @author Nikita Koksharov
  *
  */

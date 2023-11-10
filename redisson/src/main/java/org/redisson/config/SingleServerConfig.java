@@ -16,7 +16,7 @@
 package org.redisson.config;
 
 /**
- * 
+ * 单节点服务配置
  * @author Nikita Koksharov
  *
  */
@@ -24,37 +24,43 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Redis server address
-     *
+     *  Redis服务器地址
      */
     private String address;
 
     /**
+     * 最小空闲订阅连接数
      * Minimum idle subscription connection amount
      */
     private int subscriptionConnectionMinimumIdleSize = 1;
 
     /**
+     * Redis 订阅连接最大池大小
      * Redis subscription connection maximum pool size
      *
      */
     private int subscriptionConnectionPoolSize = 50;
 
     /**
+     * 最小空闲Redis连接数
      * Minimum idle Redis connection amount
      */
     private int connectionMinimumIdleSize = 24;
 
     /**
+     * Redis 连接最大池大小
      * Redis connection maximum pool size
      */
     private int connectionPoolSize = 64;
 
     /**
+     * 用于Redis连接的数据库索引
      * Database index used for Redis connection
      */
     private int database = 0;
 
     /**
+     * 检查 DNS 的时间间隔（以毫秒为单位）
      * Interval in milliseconds to check DNS
      */
     private long dnsMonitoringInterval = 5000;

@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,24 +65,41 @@ public class RedisExecutor<V, R> {
 
     static final Logger log = LoggerFactory.getLogger(RedisExecutor.class);
 
+    // 是否为只读模式
     final boolean readOnlyMode;
+    // redis 命令
     final RedisCommand<V> command;
+    // 指令参数
     final Object[] params;
+    // 主任务
     final CompletableFuture<R> mainPromise;
+    // 是否忽略重定向
     final boolean ignoreRedirect;
+    // RedissonObject 建造者
     final RedissonObjectBuilder objectBuilder;
+    // redis 连接管理器
     final ConnectionManager connectionManager;
+    // RedissonObjectBuilder 的参考类型
     final RedissonObjectBuilder.ReferenceType referenceType;
+    // 是否重试
     final boolean noRetry;
-
+    // redis 连接
     CompletableFuture<RedisConnection> connectionFuture;
+    // redis 连接节点源
     NodeSource source;
+    // redis 主从实例
     MasterSlaveEntry entry;
+    // netty 编解码器
     Codec codec;
+    // 尝试. 默认值等于 0
     volatile int attempt;
+    // 超时
     volatile Optional<Timeout> timeout = Optional.empty();
+    // 主任务监听器
     volatile BiConsumer<R, Throwable> mainPromiseListener;
+    // 写任务
     volatile ChannelFuture writeFuture;
+    // 请求异常
     volatile RedisException exception;
 
     int attempts;
@@ -112,60 +129,79 @@ public class RedisExecutor<V, R> {
     }
 
     public void execute() {
+        // 判断主任务是否取消
         if (mainPromise.isCancelled()) {
-            free();
+            free();  // 释放资源
             return;
         }
 
+        // 如果连接关闭
         if (!connectionManager.getServiceManager().getShutdownLatch().acquire()) {
+            // 释放资源
             free();
+            // 抛出异常
             mainPromise.completeExceptionally(new RedissonShutdownException("Redisson is shutdown"));
             return;
         }
 
         try {
-            codec = getCodec(codec);
+            // 获取编码器
+            this.codec = getCodec(codec);
 
+            // 获取连接
             CompletableFuture<RedisConnection> connectionFuture = getConnection();
 
+            // 尝试异步
             CompletableFuture<R> attemptPromise = new CompletableFuture<>();
-            mainPromiseListener = (r, e) -> {
-                if (!mainPromise.isCancelled()) {
-                    return;
-                }
 
-                if (connectionFuture.cancel(false)) {
-                    log.debug("Connection obtaining canceled for {}", command);
-                    timeout.ifPresent(Timeout::cancel);
-                    if (attemptPromise.cancel(false)) {
-                        free();
+            // 主任务监听器
+            mainPromiseListener = new BiConsumer<R, Throwable>() {
+                @Override
+                public void accept(R r, Throwable throwable) {
+                    // 检查主任务是否已被取消
+                    if (!mainPromise.isCancelled()) {
+                        return;  // 如果任务没有取消就返回
                     }
-                } else {
-                    if (command.isBlockingCommand()) {
-                        RedisConnection c = connectionFuture.getNow(null);
-                        if (writeFuture.cancel(false)) {
-                            attemptPromise.cancel(false);
-                        } else {
-                            c.forceFastReconnectAsync().whenComplete((res, ex) -> {
-                                attemptPromise.cancel(true);
-                            });
+                    // 取消执行连接任务成功
+                    if (connectionFuture.cancel(false)) {
+                        log.debug("Connection obtaining canceled for {}", command);
+                        timeout.ifPresent(Timeout::cancel);
+                        if (attemptPromise.cancel(false)) {
+                            free();
+                        }
+                    }
+                    // 如果取消执行连接任务失败
+                    else {
+                        if (command.isBlockingCommand()) {
+                            RedisConnection c = connectionFuture.getNow(null);
+                            if (writeFuture.cancel(false)) {
+                                attemptPromise.cancel(false);
+                            } else {
+                                c.forceFastReconnectAsync().whenComplete((res, ex) -> {
+                                    attemptPromise.cancel(true);
+                                });
+                            }
                         }
                     }
                 }
             };
 
             if (attempt == 0) {
-                mainPromise.whenComplete((r, e) -> {
+                // 当主任务结束后执行
+                mainPromise.whenComplete((r, throwable) -> {
+                    // 如果主任务监听器 != null
                     if (this.mainPromiseListener != null) {
-                        this.mainPromiseListener.accept(r, e);
+                        this.mainPromiseListener.accept(r, throwable);
                     }
                 });
             }
 
+            // 定时重试超时
             scheduleRetryTimeout(connectionFuture, attemptPromise);
-
+            // 定时连接超时
             scheduleConnectionTimeout(attemptPromise, connectionFuture);
 
+            // 连接完成后回调
             connectionFuture.whenComplete((connection, e) -> {
                 if (connectionFuture.isCancelled()) {
                     connectionManager.getServiceManager().getShutdownLatch().release();
@@ -182,6 +218,7 @@ public class RedisExecutor<V, R> {
                 }
 
                 try {
+                    // k1 使用 netty 发送请求指令
                     sendCommand(attemptPromise, connection);
                 } catch (Exception ex) {
                     free();
@@ -191,14 +228,17 @@ public class RedisExecutor<V, R> {
 
                 scheduleWriteTimeout(attemptPromise);
 
+                // 请求发送后的监听器
                 writeFuture.addListener((ChannelFutureListener) future -> {
+                    // 检查写入
                     checkWriteFuture(writeFuture, attemptPromise, connection);
                 });
             });
 
             attemptPromise.whenComplete((r, e) -> {
+                // 释放连接
                 releaseConnection(attemptPromise, connectionFuture);
-
+                // 检查尝试承诺
                 checkAttemptPromise(attemptPromise, connectionFuture);
             });
         } catch (Exception e) {
@@ -267,10 +307,10 @@ public class RedisExecutor<V, R> {
 
                 if (connectionFuture.cancel(false)) {
                     exception = new RedisTimeoutException("Unable to acquire connection! " + connectionFuture +
-                                "Increase connection pool size. "
-                                + "Node source: " + source
-                                + ", command: " + LogHelper.toString(command, params)
-                                + " after " + attempt + " retry attempts");
+                            "Increase connection pool size. "
+                            + "Node source: " + source
+                            + ", command: " + LogHelper.toString(command, params)
+                            + " after " + attempt + " retry attempts");
                 } else {
                     if (connectionFuture.isDone() && !connectionFuture.isCompletedExceptionally()) {
                         if (writeFuture == null || !writeFuture.isDone()) {
@@ -333,17 +373,17 @@ public class RedisExecutor<V, R> {
 
         timeout = Optional.of(connectionManager.getServiceManager().newTimeout(retryTimerTask, retryInterval, TimeUnit.MILLISECONDS));
     }
-    
+
     protected void free() {
         free(params);
     }
-    
+
     protected void free(Object[] params) {
         for (Object obj : params) {
             ReferenceCountUtil.safeRelease(obj);
         }
     }
-    
+
     private void checkWriteFuture(ChannelFuture future, CompletableFuture<R> attemptPromise, RedisConnection connection) {
         if (future.isCancelled() || attemptPromise.isDone()) {
             return;
@@ -352,9 +392,9 @@ public class RedisExecutor<V, R> {
         if (!future.isSuccess()) {
             exception = new WriteRedisConnectionException(
                     "Unable to write command into connection! Increase nettyThreads setting. Node source: "
-                    + source + ", connection: " + connection +
-                    ", command: " + LogHelper.toString(command, params)
-                    + " after " + attempt + " retry attempts", future.cause());
+                            + source + ", connection: " + connection +
+                            ", command: " + LogHelper.toString(command, params)
+                            + " after " + attempt + " retry attempts", future.cause());
             if (attempt == attempts) {
                 attemptPromise.completeExceptionally(exception);
             }
@@ -371,9 +411,9 @@ public class RedisExecutor<V, R> {
         if (command != null && command.isBlockingCommand()) {
             long popTimeout = 0;
             if (RedisCommands.BLOCKING_COMMANDS.contains(command)) {
-                for (int i = 0; i < params.length-1; i++) {
+                for (int i = 0; i < params.length - 1; i++) {
                     if ("BLOCK".equals(params[i])) {
-                        popTimeout = Long.valueOf(params[i+1].toString());
+                        popTimeout = Long.valueOf(params[i + 1].toString());
                         break;
                     }
                 }
@@ -425,7 +465,7 @@ public class RedisExecutor<V, R> {
     protected boolean isResendAllowed(int attempt, int attempts) {
         return attempt < attempts
                 && !noRetry
-                    && (command == null || (!command.isBlockingCommand() && !command.isNoRetry()));
+                && (command == null || (!command.isBlockingCommand() && !command.isNoRetry()));
     }
 
     private void handleBlockingOperations(CompletableFuture<R> attemptPromise, RedisConnection connection, long popTimeout) {
@@ -456,8 +496,8 @@ public class RedisExecutor<V, R> {
 
             // handling cancel operation for blocking commands
             if ((mainPromise.isCancelled()
-                    || e instanceof  InterruptedException)
-                        && !attemptPromise.isDone()) {
+                    || e instanceof InterruptedException)
+                    && !attemptPromise.isDone()) {
                 log.debug("Canceled blocking operation {} used {}", command, connection);
                 connection.forceFastReconnectAsync().whenComplete((r, ex) -> {
                     attemptPromise.cancel(true);
@@ -619,6 +659,7 @@ public class RedisExecutor<V, R> {
             list.add(new CommandData<>(promise, codec, RedisCommands.ASKING, new Object[]{}));
             list.add(new CommandData<>(attemptPromise, codec, command, params));
             CompletableFuture<Void> main = new CompletableFuture<>();
+            // 使用 netty 发送请求
             writeFuture = connection.send(new CommandsData(main, list, false, false));
         } else {
             if (log.isDebugEnabled()) {
@@ -648,7 +689,7 @@ public class RedisExecutor<V, R> {
         if (connectionManager.getServiceManager().getConfig().getMasterConnectionPoolSize() < 10) {
             if (source.getRedirect() == Redirect.ASK
                     || getClass() != RedisExecutor.class
-                        || (command != null && command.isBlockingCommand())) {
+                    || (command != null && command.isBlockingCommand())) {
                 release(connection);
             }
         } else {
@@ -708,7 +749,7 @@ public class RedisExecutor<V, R> {
         ClassLoader threadClassLoader = Thread.currentThread().getContextClassLoader();
         if (threadClassLoader != null) {
             Map<Codec, Codec> map = CODECS.computeIfAbsent(threadClassLoader, k ->
-                                            new LRUCacheMap<>(200, 0, 0));
+                    new LRUCacheMap<>(200, 0, 0));
             codecToUse = map.get(codec);
             if (codecToUse == null) {
                 try {

@@ -190,9 +190,10 @@ public interface RBucketAsync<V> extends RExpirableAsync {
     RFuture<V> getAndClearExpireAsync();
 
     /**
-     * Stores element into the holder. 
+     * 异步设置
+     * Stores element into the holder.
      * 
-     * @param value - value to set
+     * @param value - value to set 值
      * @return void
      */
     RFuture<Void> setAsync(V value);

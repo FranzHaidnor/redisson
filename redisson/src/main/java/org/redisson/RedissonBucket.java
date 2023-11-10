@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.ObjectListener;
 import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
@@ -22,8 +23,10 @@ import org.redisson.api.RPatternTopic;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandAsyncService;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
@@ -171,16 +174,32 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
     @Override
     public void set(V value) {
-        get(setAsync(value));
+        // 异步
+        RFuture<Void> future = setAsync(value);
+        // 同步
+        Void unused = get(future);
     }
 
     @Override
     public RFuture<Void> setAsync(V value) {
+        // 如果值 == null, 则执行删除命令
         if (value == null) {
+            /** {@link CommandAsyncService#writeAsync(String, RedisCommand, Object...)}*/
             return commandExecutor.writeAsync(getRawName(), RedisCommands.DEL_VOID, getRawName());
         }
+        // key 的名称
+        String key = getRawName();
+        // 编解码器
+        Codec codec = this.codec;
+        // Redis 指令
+        RedisCommand<Void> command = RedisCommands.SET;
+        // 对 RedisCommand 进行编码
+        ByteBuf encode = encode(value);
 
-        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.SET, getRawName(), encode(value));
+        // 执行请求
+        /** {@link CommandAsyncService#writeAsync(String, Codec, RedisCommand, Object...)}*/
+        RFuture<Void> future = commandExecutor.writeAsync(key, codec, command, key, encode);
+        return future;
     }
 
     @Override

@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,7 +34,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * 
+ * 客户端连接实例
+ *
  * @author Nikita Koksharov
  *
  */
@@ -44,6 +45,7 @@ public class ClientConnectionsEntry {
 
     private final Queue<RedisPubSubConnection> allSubscribeConnections = new ConcurrentLinkedQueue<>();
     private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<>();
+    // 异步信号量
     private final AsyncSemaphore freeSubscribeConnectionsCounter;
 
     private final Queue<RedisConnection> allConnections = new ConcurrentLinkedQueue<>();
@@ -73,23 +75,23 @@ public class ClientConnectionsEntry {
 
         if (config.getSubscriptionConnectionPoolSize() > 0) {
             idleConnectionWatcher.add(this, config.getSubscriptionConnectionMinimumIdleSize(),
-                                                config.getSubscriptionConnectionPoolSize(),
-                                                freeSubscribeConnections,
-                                                freeSubscribeConnectionsCounter, c -> {
-                freeSubscribeConnections.remove(c);
-                return allSubscribeConnections.remove(c);
-            });
+                    config.getSubscriptionConnectionPoolSize(),
+                    freeSubscribeConnections,
+                    freeSubscribeConnectionsCounter, c -> {
+                        freeSubscribeConnections.remove(c);
+                        return allSubscribeConnections.remove(c);
+                    });
         }
         idleConnectionWatcher.add(this, poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter, c -> {
-                freeConnections.remove(c);
-                return allConnections.remove(c);
-            });
+            freeConnections.remove(c);
+            return allConnections.remove(c);
+        });
     }
-    
+
     public boolean isMasterForRead() {
         return getFreezeReason() == FreezeReason.SYSTEM
-                        && config.getReadMode() == ReadMode.MASTER_SLAVE
-                            && getNodeType() == NodeType.MASTER;
+                && config.getReadMode() == ReadMode.MASTER_SLAVE
+                && getNodeType() == NodeType.MASTER;
     }
 
     public boolean isInitialized() {
@@ -99,7 +101,7 @@ public class ClientConnectionsEntry {
     public void setInitialized(boolean isInited) {
         this.initialized = isInited;
     }
-    
+
     public void setNodeType(NodeType nodeType) {
         this.nodeType = nodeType;
     }
@@ -143,7 +145,7 @@ public class ClientConnectionsEntry {
     public CompletableFuture<Void> acquireConnection(RedisCommand<?> command) {
         return freeConnectionsCounter.acquire();
     }
-    
+
     public void releaseConnection() {
         freeConnectionsCounter.release();
     }
@@ -188,7 +190,7 @@ public class ClientConnectionsEntry {
             }
 
             log.debug("new connection created: {}", conn);
-            
+
             allConnections.add(conn);
         });
     }
@@ -199,13 +201,13 @@ public class ClientConnectionsEntry {
             if (e != null) {
                 return;
             }
-            
+
             log.debug("new pubsub connection created: {}", conn);
 
             allSubscribeConnections.add(conn);
         });
     }
-    
+
     public Queue<RedisConnection> getAllConnections() {
         return allConnections;
     }
@@ -227,7 +229,7 @@ public class ClientConnectionsEntry {
             connection.closeAsync();
             return;
         }
-        
+
         connection.setLastUsageTime(System.nanoTime());
         freeSubscribeConnections.add(connection);
     }

@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -66,6 +66,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 /**
+ * Redis 服务管理器
  *
  * @author Nikita Koksharov
  *
@@ -101,6 +102,7 @@ public class ServiceManager {
         }
     };
 
+    // 连接事件中心
     private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
 
     private final String id = UUID.randomUUID().toString();
@@ -445,6 +447,7 @@ public class ServiceManager {
     public byte[] generateIdArray() {
         return generateIdArray(16);
     }
+
     public byte[] generateIdArray(int size) {
         byte[] id = new byte[size];
         ThreadLocalRandom.current().nextBytes(id);

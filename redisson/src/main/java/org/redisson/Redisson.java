@@ -60,6 +60,7 @@ public class Redisson implements RedissonClient {
     protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = new ConcurrentHashMap<>();
     protected final Config config;
 
+    // 响应集合
     protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
 
     protected Redisson(Config config) {
@@ -73,6 +74,7 @@ public class Redisson implements RedissonClient {
         RedissonObjectBuilder objectBuilder = null;
         // 配置选项指示是否启用Redisson参考功能。 默认值为true
         if (config.isReferenceEnabled()) {
+            // Redisson 对象建造者
             objectBuilder = new RedissonObjectBuilder(this);
         }
         // 命令异步执行器

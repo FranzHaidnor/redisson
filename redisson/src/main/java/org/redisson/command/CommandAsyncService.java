@@ -59,9 +59,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
+    // 编解码器
     final Codec codec;
+    // 连接管理器
     final ConnectionManager connectionManager;
+    // 对象建造者
     final RedissonObjectBuilder objectBuilder;
+    // 对象建造者类型
     final RedissonObjectBuilder.ReferenceType referenceType;
 
     public CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder, RedissonObjectBuilder.ReferenceType referenceType) {
@@ -108,7 +112,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         try {
-            return future.toCompletableFuture().get();
+            /** {@link CompletableFutureWrapper#toCompletableFuture()}*/
+            CompletableFuture<V> completableFuture = future.toCompletableFuture();
+
+            return completableFuture.get();
         } catch (InterruptedException e) {
             future.cancel(true);
             Thread.currentThread().interrupt();
@@ -518,7 +525,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T, R> RFuture<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object... params) {
+        // 获取 Redis 节点
         NodeSource source = getNodeSource(key);
+        // 异步执行
         return async(false, source, codec, command, params, false, false);
     }
 
@@ -535,16 +544,24 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private final AtomicBoolean sortRoSupported = new AtomicBoolean(true);
     
-    public <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec,
-            RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
+    public <V, R> RFuture<R> async(boolean readOnlyMode,    // 是否为只读模式
+                                   NodeSource source,       // redis 节点
+                                   Codec codec,             // 编解码器
+                                   RedisCommand<V> command, // 命令
+                                   Object[] params,         // 参数
+                                   boolean ignoreRedirect,  // 是否忽略重定向
+                                   boolean noRetry) {       // 是否重试
+
         if (readOnlyMode && command.getName().equals("SORT") && !sortRoSupported.get()) {
             readOnlyMode = false;
         } else if (readOnlyMode && command.getName().equals("SORT") && sortRoSupported.get()) {
             RedisCommand cmd = new RedisCommand("SORT_RO", command.getReplayMultiDecoder());
             CompletableFuture<R> mainPromise = createPromise();
+
             RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, cmd, params, mainPromise,
                     ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry);
             executor.execute();
+
             CompletableFuture<R> result = new CompletableFuture<>();
             mainPromise.whenComplete((r, e) -> {
                 if (e != null && e.getMessage().startsWith("ERR unknown command")) {
@@ -558,10 +575,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return new CompletableFutureWrapper<>(result);
         }
 
-        CompletableFuture<R> mainPromise = createPromise();
-        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise,
-                                                    ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry);
+        // new 创建一个 CompletableFuture
+        CompletableFuture<R> mainPromise = createPromise(); // 主任务
+        // 执行命令时创建一个Redis 执行器
+        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry);
+        // 执行命令
         executor.execute();
+        // 创建一个线程执行结果的包装器
         return new CompletableFutureWrapper<>(mainPromise);
     }
 

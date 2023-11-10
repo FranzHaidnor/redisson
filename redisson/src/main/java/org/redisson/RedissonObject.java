@@ -45,8 +45,17 @@ import java.util.stream.StreamSupport;
  */
 public abstract class RedissonObject implements RObject {
 
+    /**
+     * 指令执行器
+     */
     protected final CommandAsyncExecutor commandExecutor;
+    /**
+     * bucket 的名称, 等同于 key 值
+     */
     protected String name;
+    /**
+     * 编解码器
+     */
     protected final Codec codec;
 
     public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {

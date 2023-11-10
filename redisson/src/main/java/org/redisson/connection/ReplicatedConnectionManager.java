@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,6 +43,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
+ * 适用于 AWS ElastiCache 复制组或 Azure Redis 缓存的 ConnectionManager 。
+ * 通过向该管理器提供复制组的所有节点，可以轮询每个节点的角色，以确定是否发生故障转移，从而产生新的主节点。
+ * <p>
  * {@link ConnectionManager} for AWS ElastiCache Replication Groups or Azure Redis Cache. By providing all nodes
  * of the replication group to this manager, the role of each node can be polled to determine
  * if a failover has occurred resulting in a new master.
@@ -122,12 +125,12 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         res.setDatabase(((ReplicatedServersConfig) cfg).getDatabase());
         return res;
     }
-    
+
     private void scheduleMasterChangeCheck(ReplicatedServersConfig cfg) {
         if (serviceManager.isShuttingDown()) {
             return;
         }
-        
+
         monitorFuture = serviceManager.getGroup().schedule(() -> {
             if (serviceManager.isShuttingDown()) {
                 return;
@@ -135,11 +138,11 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
             Set<InetSocketAddress> slaveIPs = Collections.newSetFromMap(new ConcurrentHashMap<>());
             List<CompletableFuture<Role>> roles = cfg.getNodeAddresses().stream()
-                .map(address -> {
-                    RedisURI uri = new RedisURI(address);
-                    return checkNode(uri, cfg, slaveIPs);
-                })
-                .collect(Collectors.toList());
+                    .map(address -> {
+                        RedisURI uri = new RedisURI(address);
+                        return checkNode(uri, cfg, slaveIPs);
+                    })
+                    .collect(Collectors.toList());
 
             CompletableFuture<Void> f = CompletableFuture.allOf(roles.toArray(new CompletableFuture[0]));
             f.whenComplete((r, e) -> {
@@ -162,7 +165,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
         Set<RedisClient> failedSlaves = entry.getAllEntries().stream()
                 .filter(e -> e.getNodeType() == NodeType.SLAVE
-                                    && !slaveIPs.contains(e.getClient().getAddr()))
+                        && !slaveIPs.contains(e.getClient().getAddr()))
                 .map(e -> e.getClient())
                 .collect(Collectors.toSet());
 
@@ -170,8 +173,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             if (entry.slaveDown(slave.getAddr(), FreezeReason.MANAGER)) {
                 log.info("slave: {} is down", slave);
                 disconnectNode(new RedisURI(slave.getConfig().getAddress().getScheme(),
-                                            slave.getAddr().getAddress().getHostAddress(),
-                                            slave.getAddr().getPort()));
+                        slave.getAddr().getAddress().getHostAddress(),
+                        slave.getAddr().getPort()));
             }
         }
     }
@@ -261,7 +264,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         if (monitorFuture != null) {
             monitorFuture.cancel(true);
         }
-        
+
         closeNodeConnections();
         super.shutdown(quietPeriod, timeout, unit);
     }

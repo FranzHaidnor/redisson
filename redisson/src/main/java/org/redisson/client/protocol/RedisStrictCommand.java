@@ -19,7 +19,7 @@ import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
- * 
+ * Redis严格命令
  * @author Nikita Koksharov
  *
  * @param <T> command type

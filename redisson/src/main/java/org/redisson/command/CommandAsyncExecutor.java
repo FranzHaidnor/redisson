@@ -35,9 +35,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 /**
- *
+ * redis 命令异步执行器
  * @author Nikita Koksharov
- *
  */
 public interface CommandAsyncExecutor {
 
@@ -47,10 +46,16 @@ public interface CommandAsyncExecutor {
 
     ServiceManager getServiceManager();
 
+    /**
+     * 将所有的异常都转换为 RedisException
+     */
     RedisException convertException(ExecutionException e);
 
     <V> void transfer(CompletionStage<V> future1, CompletableFuture<V> future2);
 
+    /**
+     * 立即获取值
+     */
     <V> V getNow(CompletableFuture<V> future);
 
     <V> V get(RFuture<V> future);
@@ -123,6 +128,9 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> readRandomAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
 
+    /**
+     * 异步执行
+     */
     <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec,
                             RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry);
 

@@ -46,6 +46,7 @@ public class Config {
 
     private MasterSlaveServersConfig masterSlaveServersConfig;
 
+    // redis 单节点配置对象
     private SingleServerConfig singleServerConfig;
 
     private ClusterServersConfig clusterServersConfig;

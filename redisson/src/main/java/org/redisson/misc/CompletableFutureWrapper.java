@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- *
+ * CompletableFuture 的包装器
  *
  * @author Nikita Koksharov
  * @param <V> value type
