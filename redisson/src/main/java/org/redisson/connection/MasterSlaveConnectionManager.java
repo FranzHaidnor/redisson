@@ -70,6 +70,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         // 服务管理者
         this.serviceManager = serviceManager;
 
+        // 如果配置为主从服务配置
         if (cfg instanceof MasterSlaveServersConfig) {
             this.config = (MasterSlaveServersConfig) cfg;
             if (this.config.getSlaveAddresses().isEmpty()
@@ -77,11 +78,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 throw new IllegalArgumentException("Slaves aren't defined. readMode can't be SLAVE or MASTER_SLAVE");
             }
         } else {
+            // 创建主从服务配置 MasterSlaveServersConfig
             this.config = create(cfg);
         }
 
         serviceManager.setConfig(this.config);
         serviceManager.initTimer();
+        // 发布订阅服务
         subscribeService = new PublishSubscribeService(this);
     }
 

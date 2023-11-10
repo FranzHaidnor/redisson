@@ -67,30 +67,43 @@ public class CommandsQueue extends ChannelDuplexHandler {
 
     private final AtomicBoolean lock = new AtomicBoolean();
 
+    /**
+     * 往外面写
+     */
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof QueueCommand) {
             QueueCommand data = (QueueCommand) msg;
+            // 创建一个命令持有者 QueueCommandHolder
             QueueCommandHolder holder = new QueueCommandHolder(data, promise);
 
+            // 从 netty channel 中获取命令持有者队列
             Queue<QueueCommandHolder> queue = ctx.channel().attr(COMMANDS_QUEUE).get();
 
             while (true) {
+                // 上锁. 保证请求顺序的不会错乱
+                // 使用了原子类,做比较并交换. 预期值为 false, 上锁后新值为 true
                 if (lock.compareAndSet(false, true)) {
                     try {
+                        // 把命令持有者放进队列
                         queue.add(holder);
                         try {
+                            // 给 ChannelPromise 添加监听器
                             holder.getChannelPromise().addListener(future -> {
+                                // 如果没有执行成功, 就移除此次请求的 QueueCommandHolder
                                 if (!future.isSuccess()) {
                                     queue.remove(holder);
                                 }
                             });
+                            // 向外写数据
                             ctx.writeAndFlush(data, holder.getChannelPromise());
                         } catch (Exception e) {
+                            // 出现异常,移除此次请求的 QueueCommandHolder
                             queue.remove(holder);
                             throw e;
                         }
                     } finally {
+                        // 解锁
                         lock.set(false);
                     }
                     break;

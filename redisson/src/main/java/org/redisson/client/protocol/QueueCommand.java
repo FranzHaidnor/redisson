@@ -18,7 +18,7 @@ package org.redisson.client.protocol;
 import java.util.List;
 
 /**
- * 
+ * 队列命令
  * @author Nikita Koksharov
  *
  */

@@ -191,6 +191,7 @@ public class ConfigSupport {
     }
 
     public static ConnectionManager createConnectionManager(Config configCopy) {
+        // 创建连接管理器
         ServiceManager serviceManager = new ServiceManager(configCopy);
 
         ConnectionManager cm = null;

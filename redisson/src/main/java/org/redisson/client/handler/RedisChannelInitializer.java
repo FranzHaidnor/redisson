@@ -72,7 +72,6 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
     }
 
     /**
-     * 初始化连接处理器
      * <p>
      * IN       RedisConnectionHandler      连接处理器
      * IN       ConnectionWatchdog          连接看门狗

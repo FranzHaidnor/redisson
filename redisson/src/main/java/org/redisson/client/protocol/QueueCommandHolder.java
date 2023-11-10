@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.netty.channel.ChannelPromise;
 
 /**
- * 
+ * 队列命令持有者
  * @author Nikita Koksharov
  *
  */
@@ -28,6 +28,9 @@ public class QueueCommandHolder {
 
     final AtomicBoolean sent = new AtomicBoolean();
     final ChannelPromise channelPromise;
+    /**
+     * 命令队列
+     */
     final QueueCommand command;
 
     public QueueCommandHolder(QueueCommand command, ChannelPromise channelPromise) {

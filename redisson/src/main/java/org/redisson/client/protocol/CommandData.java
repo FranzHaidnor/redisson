@@ -33,14 +33,14 @@ import java.util.concurrent.CompletionException;
  * @param <R> output type
  */
 public class CommandData<T, R> implements QueueCommand {
-
+    // redis 响应的结果
     final CompletableFuture<R> promise;
     RedisCommand<T> command;
     final Object[] params;
     final Codec codec;
     final MultiDecoder<Object> messageDecoder;
 
-    public CommandData(CompletableFuture<R> promise, Codec codec, RedisCommand<T> command, Object[] params) {
+    public CommandData(CompletableFuture<R> promise/*返回值包装器*/, Codec codec, RedisCommand<T> command/*请求命令*/, Object[] params) {
         this(promise, null, codec, command, params);
     }
 

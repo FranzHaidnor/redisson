@@ -26,7 +26,7 @@ public abstract class RedissonBaseTest {
     @BeforeEach
     public void before() throws IOException, InterruptedException {
         // 清空 Redis 库中所有的数据
-        redisson.getKeys().flushall();
+        // redisson.getKeys().flushall();
     }
 
     public static Config createConfig() {

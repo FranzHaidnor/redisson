@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * 低级 Redis 客户端
  * Low-level Redis client
  * 
  * @author Nikita Koksharov
@@ -63,7 +64,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class RedisClient {
 
     private final AtomicReference<CompletableFuture<InetSocketAddress>> resolvedAddrFuture = new AtomicReference<>();
+    // netty 客户端启动引导器
     private final Bootstrap bootstrap;
+    // netty 发布订阅客户端启动引导器
     private final Bootstrap pubSubBootstrap;
     private final RedisURI uri;
     private InetSocketAddress resolvedAddr;
@@ -85,11 +88,15 @@ public final class RedisClient {
     private Runnable connectedListener;
     private Runnable disconnectedListener;
 
+
+    // 使用静态方法创建
     public static RedisClient create(RedisClientConfig config) {
         return new RedisClient(config);
     }
-    
+
+    // 私有构造方法
     private RedisClient(RedisClientConfig config) {
+        // 创建配置
         RedisClientConfig copy = new RedisClientConfig(config);
         if (copy.getTimer() == null) {
             copy.setTimer(new HashedWheelTimer());
@@ -124,9 +131,11 @@ public final class RedisClient {
         if (resolvedAddr != null) {
             resolvedAddrFuture.set(CompletableFuture.completedFuture(resolvedAddr));
         }
-        
+        // EventLoop
         channels = new DefaultChannelGroup(copy.getGroup().next());
+        // 创建启动引导器
         bootstrap = createBootstrap(copy, Type.PLAIN);
+        // 发布订阅客户端启动引导器
         pubSubBootstrap = createBootstrap(copy, Type.PUBSUB);
         
         this.commandTimeout = copy.getCommandTimeout();
@@ -134,10 +143,15 @@ public final class RedisClient {
 
     private Bootstrap createBootstrap(RedisClientConfig config, Type type) {
         Bootstrap bootstrap = new Bootstrap()
+                        // 解析多个 Address
                         .resolver(config.getResolverGroup())
+                        // SocketChannel 实现
                         .channel(config.getSocketChannelClass())
+                        // EventLoopGroup
                         .group(config.getGroup());
 
+        // k1 初始化 NETTY 连接处理器
+        /** {@link RedisChannelInitializer#initChannel(Channel)} */
         bootstrap.handler(new RedisChannelInitializer(bootstrap, config, this, channels, type));
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectTimeout());
         bootstrap.option(ChannelOption.SO_KEEPALIVE, config.isKeepAlive());

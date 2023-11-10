@@ -23,6 +23,7 @@ import io.netty.resolver.dns.DnsServerAddressStreamProvider;
 import java.net.InetSocketAddress;
 
 /**
+ * 地址解析器集团工厂
  * Created by hasaadon on 15/02/2018.
  */
 public interface AddressResolverGroupFactory {

@@ -70,13 +70,17 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     protected QueueCommandHolder getCommand(ChannelHandlerContext ctx) {
+        // 从 channel 的附件中取出第一个 QueueCommandHolder
         Queue<QueueCommandHolder> queue = ctx.channel().attr(CommandsQueue.COMMANDS_QUEUE).get();
+        // 从队列中取出第一个
         return queue.peek();
     }
 
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        // 从 channel 的附件中取出第一个 QueueCommandHolder
         QueueCommandHolder holder = getCommand(ctx);
+        // 队列指令
         QueueCommand data = null;
         if (holder != null) {
             data = holder.getCommand();
@@ -87,6 +91,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
         
         if (data == null) {
+            // redis 协议解码, 拆包粘包
             while (in.writerIndex() > in.readerIndex()) {
                 int endIndex = skipCommand(in);
 
@@ -338,6 +343,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (code == '+') {
             String result = readString(in);
 
+            // 处理响应结果
             handleResult(data, parts, result, skipConvertor);
         } else if (code == '-') {
             String error = readString(in);
@@ -466,6 +472,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
+            // 将 CommandData 中的 promise 对象设置完成的结果
             completeResponse(data, result);
         }
     }

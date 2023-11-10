@@ -659,7 +659,7 @@ public class RedisExecutor<V, R> {
             list.add(new CommandData<>(promise, codec, RedisCommands.ASKING, new Object[]{}));
             list.add(new CommandData<>(attemptPromise, codec, command, params));
             CompletableFuture<Void> main = new CompletableFuture<>();
-            // 使用 netty 发送请求
+            //  使用 netty 发送请求 channel.writeAndFlush(data)
             writeFuture = connection.send(new CommandsData(main, list, false, false));
         } else {
             if (log.isDebugEnabled()) {
@@ -670,6 +670,7 @@ public class RedisExecutor<V, R> {
                 log.debug("acquired{}connection for command {} and params {} from slot {} using node {}... {}",
                         connectionType, command, LogHelper.toString(params), source, connection.getRedisClient().getAddr(), connection);
             }
+            //  使用 netty 发送请求 channel.writeAndFlush(data)
             writeFuture = connection.send(new CommandData<>(attemptPromise, codec, command, params));
 
             if (connectionManager.getServiceManager().getConfig().getMasterConnectionPoolSize() < 10

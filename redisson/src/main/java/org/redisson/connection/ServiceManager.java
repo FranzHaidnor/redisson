@@ -102,17 +102,21 @@ public class ServiceManager {
         }
     };
 
-    // 连接事件中心
+    /**
+     * 连接事件中心
+     */
     private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
 
     private final String id = UUID.randomUUID().toString();
 
+    // 处理 netty 事件的线程组
     private final EventLoopGroup group;
 
     private final Class<? extends SocketChannel> socketChannelClass;
 
     private final AddressResolverGroup<InetSocketAddress> resolverGroup;
 
+    // 处理业务的线程池
     private final ExecutorService executor;
 
     private final Config cfg;
@@ -170,14 +174,15 @@ public class ServiceManager {
             this.socketChannelClass = IOUringSocketChannel.class;
             this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IOUringDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
         } else {
+            // 使用 DefaultThreadFactory 创建  NioEventLoopGroup。 默认线程数为 32
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
-
+            // SocketChannel 实现类
             this.socketChannelClass = NioSocketChannel.class;
-            if (PlatformDependent.isAndroid()) {
+            if (PlatformDependent.isAndroid()) {  // 平台相关。 是否为安卓
                 this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
             } else {
                 this.resolverGroup = cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
@@ -185,10 +190,13 @@ public class ServiceManager {
         }
 
         if (cfg.getExecutor() == null) {
+            // CPU 核心数量 * 2
             int threads = Runtime.getRuntime().availableProcessors() * 2;
             if (cfg.getThreads() != 0) {
+                // 16 线程
                 threads = cfg.getThreads();
             }
+            // 创建线程池
             executor = Executors.newFixedThreadPool(threads, new DefaultThreadFactory("redisson"));
         } else {
             executor = cfg.getExecutor();
@@ -196,7 +204,9 @@ public class ServiceManager {
 
         this.cfg = cfg;
 
+        // 如果连接事件监听器不等于 null
         if (cfg.getConnectionListener() != null) {
+            // 绑定连接监听器
             this.connectionEventsHub.addListener(cfg.getConnectionListener());
         }
 
@@ -230,8 +240,10 @@ public class ServiceManager {
             minTimeout = 100;
         }
 
+        // hash 轮定时器
         timer = new HashedWheelTimer(new DefaultThreadFactory("redisson-timer"), minTimeout, TimeUnit.MILLISECONDS, 1024, false);
 
+        // 空闲连接观察者
         connectionWatcher = new IdleConnectionWatcher(group, config);
     }
 
