@@ -77,7 +77,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
      * IN       ConnectionWatchdog          连接看门狗
      * OUT      CommandEncoder              指令编码器
      * OUT      CommandBatchEncoder         指令批量编码器
-     * IN&OUT   CommandsQueue               指令队列
+     * IN&OUT   CommandsQueue               指令队列          // 把 QueueCommand 放进 channel 的请求队列中
      * IN       PingConnectionHandler       连接检测处理器
      * IN       CommandDecoder              指令解码器
      * IN&OUT   ErrorsLoggingHandler        异常日志处理器

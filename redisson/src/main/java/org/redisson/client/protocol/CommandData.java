@@ -40,7 +40,10 @@ public class CommandData<T, R> implements QueueCommand {
     final Codec codec;
     final MultiDecoder<Object> messageDecoder;
 
-    public CommandData(CompletableFuture<R> promise/*返回值包装器*/, Codec codec, RedisCommand<T> command/*请求命令*/, Object[] params) {
+    public CommandData(CompletableFuture<R> promise/*返回值包装器*/,
+                       Codec codec /*编解码器*/,
+                       RedisCommand<T> command/*请求命令*/,
+                       Object[] params /*参数*/) {
         this(promise, null, codec, command, params);
     }
 

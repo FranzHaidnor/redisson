@@ -141,9 +141,13 @@ public class RedisConnection implements RedisCommands {
         return null;
     }
 
+    /**
+     * 获取当前指令
+     */
     public CommandData<?, ?> getCurrentCommand() {
         Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
         if (queue != null) {
+            // 取出头部的元素, 并没有从队列删除
             QueueCommandHolder holder = queue.peek();
             if (holder != null) {
                 if (holder.getCommand() instanceof CommandData) {
@@ -240,6 +244,9 @@ public class RedisConnection implements RedisCommands {
         return async(-1, encoder, command, params);
     }
 
+    /**
+     * k1 Redisson 发送异步 netty 请求
+     */
     public <T, R> RFuture<R> async(long timeout, Codec encoder, RedisCommand<T> command, Object... params) {
         CompletableFuture<R> promise = new CompletableFuture<>();
         if (timeout == -1) {
@@ -251,22 +258,29 @@ public class RedisConnection implements RedisCommands {
             return new CompletableFutureWrapper<>(cause);
         }
 
+        // 创建一个定时任务。用于做请求超时
         Timeout scheduledFuture = redisClient.getTimer().newTimeout(t -> {
             RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for command: "
                     + LogHelper.toString(command, params) + ", Redis client: " + redisClient);
+            // 如果超时就抛出异常
             promise.completeExceptionally(ex);
         }, timeout, TimeUnit.MILLISECONDS);
-        
+
+        // 如果主任务在超时前完成了，就取消超时的定时任务
         promise.whenComplete((res, e) -> {
             scheduledFuture.cancel();
         });
-        
+
+        // 调用 netty 发送请求
         ChannelFuture writeFuture = send(new CommandData<>(promise, encoder, command, params));
+        // 写请求添加监听器
         writeFuture.addListener((ChannelFutureListener) future -> {
+            // 如果失败了则抛出异常
             if (!future.isSuccess()) {
                 promise.completeExceptionally(future.cause());
             }
         });
+        // 包装 promise
         return new CompletableFutureWrapper<>(promise);
     }
 

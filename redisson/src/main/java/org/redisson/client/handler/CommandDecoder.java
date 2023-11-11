@@ -204,9 +204,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
     
     protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data, int endIndex) throws Exception {
+        // CommandData 一次一个命令
         if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>) data;
             try {
+                // 解码
                 decode(in, cmd, null, channel, false, null);
                 sendNext(channel, data);
             } catch (Exception e) {
@@ -216,13 +218,16 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 cmd.tryFailure(e);
                 throw e;
             }
-        } else if (data instanceof CommandsData) {
+        }
+        // CommandsData 一次多个命令
+        else if (data instanceof CommandsData) {
             CommandsData commands = (CommandsData) data;
             try {
                 decodeCommandBatch(channel, in, commands);
             } catch (Exception e) {
                 in.readerIndex(endIndex);
                 sendNext(channel);
+                // 抛出异常
                 commands.getPromise().completeExceptionally(e);
                 throw e;
             }
@@ -242,6 +247,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void sendNext(Channel channel) {
         Queue<QueueCommandHolder> queue = channel.attr(CommandsQueue.COMMANDS_QUEUE).get();
+        // 从队列里真正的弹出第一个元素
         queue.poll();
         state(null);
     }
@@ -391,6 +397,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             }
         } else if (code == ':') {
             Long result = readLong(in);
+            // 处理响应结果
             handleResult(data, parts, result, false);
         } else if (code == '$') {
             ByteBuf buf = readBytes(in);
@@ -399,6 +406,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 Decoder<Object> decoder = selectDecoder(data, parts);
                 result = decoder.decode(buf, state());
             }
+            // 处理响应结果
             handleResult(data, parts, result, false);
         } else if (code == '*') {
             long size = readLong(in);
@@ -409,7 +417,6 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             decodeList(in, data, parts, channel, size, respParts, skipConvertor, commandsData);
             
             state().decLevel();
-            
         } else {
             String dataStr = in.toString(0, in.writerIndex(), CharsetUtil.UTF_8);
             throw new IllegalStateException("Can't decode replay: " + dataStr);
@@ -472,7 +479,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
-            // 将 CommandData 中的 promise 对象设置完成的结果
+            // 将 CommandData 中的 promise 对象设置完成的结果  data.getPromise().complete(result);
             completeResponse(data, result);
         }
     }
