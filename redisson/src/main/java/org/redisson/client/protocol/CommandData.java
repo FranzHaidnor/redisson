@@ -26,18 +26,29 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 /**
- * 
- * @author Nikita Koksharov
- *
  * @param <T> input type
  * @param <R> output type
  */
 public class CommandData<T, R> implements QueueCommand {
-    // redis 响应的结果
+    /**
+     * 封装 Redis 响应的结果
+     */
     final CompletableFuture<R> promise;
+    /**
+     * Redis 命令
+     */
     RedisCommand<T> command;
+    /**
+     * 命令的参数
+     */
     final Object[] params;
+    /**
+     * 编解码器
+     */
     final Codec codec;
+    /**
+     * 消息解码器
+     */
     final MultiDecoder<Object> messageDecoder;
 
     public CommandData(CompletableFuture<R> promise/*返回值包装器*/,
@@ -70,9 +81,13 @@ public class CommandData<T, R> implements QueueCommand {
     public CompletableFuture<R> getPromise() {
         return promise;
     }
-    
+
+    /**
+     * 抛出异常
+     */
     public Throwable cause() {
         try {
+            // 立即获取请求结果. 参数valueIfAbsent: 如果获取不到就返回 null
             promise.getNow(null);
             return null;
         } catch (CompletionException e) {
@@ -82,10 +97,17 @@ public class CommandData<T, R> implements QueueCommand {
         }
     }
 
+    /**
+     * 判断任务有没有执行成功
+     */
     public boolean isSuccess() {
+        // 任务已完成 & 没有以异常的方式完成
         return promise.isDone() && !promise.isCompletedExceptionally();
     }
 
+    /**
+     * 尝试失败
+     */
     public boolean tryFailure(Throwable cause) {
         return promise.completeExceptionally(cause);
     }
@@ -100,6 +122,9 @@ public class CommandData<T, R> implements QueueCommand {
                 + LogHelper.toString(params) + ", codec=" + codec + "]";
     }
 
+    /**
+     * 获取发布订阅的操作
+     */
     @Override
     public List<CommandData<Object, Object>> getPubSubOperations() {
         if (RedisCommands.PUBSUB_COMMANDS.contains(getCommand().getName())) {

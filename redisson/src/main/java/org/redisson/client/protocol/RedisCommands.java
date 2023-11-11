@@ -318,9 +318,18 @@ public interface RedisCommands {
                         }
                     }));
 
+    /**
+     * 阻塞命令的名称 Set 集合
+     */
     Set<String> BLOCKING_COMMAND_NAMES = new HashSet<String>(
-            Arrays.asList(BRPOPLPUSH.getName(), BZPOPMIN_VALUE.getName(), BZPOPMAX_VALUE.getName(),
-                    BLPOP.getName(), BRPOP.getName(), BLMOVE.getName(), BZMPOP_SINGLE_LIST.getName(), BLMPOP.getName()));
+            Arrays.asList(BRPOPLPUSH.getName(),
+                    BZPOPMIN_VALUE.getName(),
+                    BZPOPMAX_VALUE.getName(),
+                    BLPOP.getName(),
+                    BRPOP.getName(),
+                    BLMOVE.getName(),
+                    BZMPOP_SINGLE_LIST.getName(),
+                    BLMPOP.getName()));
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor());
     RedisStrictCommand<Long> PFCOUNT = new RedisStrictCommand<Long>("PFCOUNT");
@@ -614,6 +623,9 @@ public interface RedisCommands {
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_BLOCKING_SINGLE = new RedisCommand<>("XREADGROUP",
             XREADGROUP_SINGLE.getReplayMultiDecoder());
 
+    /**
+     * 阻塞命令 Set 集合
+     */
     Set<RedisCommand> BLOCKING_COMMANDS = new HashSet<RedisCommand>(Arrays.asList(
             XREAD_BLOCKING_SINGLE, XREAD_BLOCKING, XREADGROUP_BLOCKING_SINGLE, XREADGROUP_BLOCKING));
 

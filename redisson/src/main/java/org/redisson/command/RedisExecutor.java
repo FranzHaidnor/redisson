@@ -128,6 +128,9 @@ public class RedisExecutor<V, R> {
         this.referenceType = referenceType;
     }
 
+    /**
+     * K1 执行 Redis 命令
+     */
     public void execute() {
         // 判断主任务是否取消
         if (mainPromise.isCancelled()) {
@@ -218,7 +221,7 @@ public class RedisExecutor<V, R> {
                 }
 
                 try {
-                    // k1 使用 netty 发送请求指令
+                    // 使用 netty 发送请求指令
                     sendCommand(attemptPromise, connection);
                 } catch (Exception ex) {
                     free();

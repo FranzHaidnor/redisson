@@ -34,9 +34,13 @@ public class RedisCommand<R> {
      * 子名称
      */
     private final String subName;
-    // 重播多解码器
+    /**
+     * 重播多解码器
+     */
     private final MultiDecoder<R> replayMultiDecoder;
-    // 转换器
+    /**
+     * 转换器
+     */
     Convertor<R> convertor = new EmptyConvertor<R>();
 
     /**
@@ -118,6 +122,9 @@ public class RedisCommand<R> {
                 || RedisCommands.NO_RETRY_COMMANDS.contains(this);
     }
 
+    /**
+     * 判断此命令是否为 Redis 阻塞命令
+     */
     public boolean isBlockingCommand() {
         return RedisCommands.BLOCKING_COMMAND_NAMES.contains(getName())
                 || RedisCommands.BLOCKING_COMMANDS.contains(this);
