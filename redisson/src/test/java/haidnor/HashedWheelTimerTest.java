@@ -26,7 +26,7 @@ public class HashedWheelTimerTest {
         // 执行任务
         CompletableFuture.runAsync(() -> {
             // 模拟处理任务耗时
-            sleep(2);
+            sleep(4);
 
             // 判断任务有没有结束
             // System.out.println(mainPromise.isDone());
