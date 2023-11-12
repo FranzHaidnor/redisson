@@ -46,6 +46,9 @@ import java.io.OutputStream;
  */
 public class JacksonCodec<T> implements JsonCodec<T> {
 
+    /**
+     * 编码器
+     */
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) throws IOException {
@@ -61,10 +64,14 @@ public class JacksonCodec<T> implements JsonCodec<T> {
         }
     };
 
+    /**
+     * 解码器
+     */
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             if (valueClass != null) {
+                // netty 提供了 ByteBufInputStream. 把包装 ByteBuf 成一个 InputStream
                 return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueClass);
             }
             return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueTypeReference);
@@ -129,6 +136,7 @@ public class JacksonCodec<T> implements JsonCodec<T> {
     }
 
     protected void init(ObjectMapper objectMapper) {
+        // 忽略那些为 null 的属性
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objectMapper.setVisibility(objectMapper.getSerializationConfig()
                 .getDefaultVisibilityChecker()
