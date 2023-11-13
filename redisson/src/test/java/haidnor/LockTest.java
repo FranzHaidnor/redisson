@@ -15,7 +15,7 @@ public class LockTest extends RedissonBaseTest {
         RLock lock = redisson.getLock("lock");
         /** {@link RedissonLock#tryLock()}*/
         if (lock.tryLock()) {
-            System.out.println("");
+            System.out.println("do something");
         }
         /** {@link RedissonBaseLock#unlock()}*/
         lock.unlock();

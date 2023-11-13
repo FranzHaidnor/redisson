@@ -23,6 +23,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandAsyncService;
 import org.redisson.connection.ServiceManager;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
@@ -96,6 +97,7 @@ public abstract class RedissonObject implements RObject {
     }
     
     protected final <V> V get(RFuture<V> future) {
+        /** {@link CommandAsyncService#get(RFuture)}*/
         return commandExecutor.get(future);
     }
     

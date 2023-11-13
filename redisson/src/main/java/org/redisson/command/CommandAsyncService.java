@@ -868,7 +868,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier) {
+        // stage.handle 方法的作用, 无论正常完成还是异常完成后都执行  参考 https://www.cnblogs.com/txmfz/p/11266411.html
         CompletionStage<T> s = stage.handle((r, ex) -> {
+            // 如果抛出异常则执行以下代码
             if (ex != null) {
                 if (ex.getCause().getMessage().equals("None of slaves were synced")) {
                     return supplier.get().handle((r1, e) -> {
@@ -885,7 +887,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
             }
             return CompletableFuture.completedFuture(r);
-        }).thenCompose(f -> (CompletionStage<T>) f);
+        })
+        // thenCompose 方法根据正常完成的阶段本身而不是其结果的产出型
+        .thenCompose(f -> (CompletionStage<T>) f);
         return s;
     }
 

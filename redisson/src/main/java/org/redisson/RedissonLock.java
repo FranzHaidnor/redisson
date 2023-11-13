@@ -162,7 +162,7 @@ public class RedissonLock extends RedissonBaseLock {
     private RFuture<Boolean> tryAcquireOnceAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         // 结果值
         CompletionStage<Boolean> acquiredFuture;
-        // 如果续期时间 > 0
+        // 如果用户指定了续期时间 > 0
         if (leaseTime > 0) {
             acquiredFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         } else {
@@ -222,7 +222,9 @@ public class RedissonLock extends RedissonBaseLock {
 
     @Override
     public boolean tryLock() {
-        return get(tryLockAsync());
+        // 尝试获取锁
+        RFuture<Boolean> booleanRFuture = tryLockAsync();
+        return get(booleanRFuture);
     }
 
     /**
@@ -374,30 +376,32 @@ public class RedissonLock extends RedissonBaseLock {
         return evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local val = redis.call('get', KEYS[3]); " +
                         "if val ~= false then " +
-                        "return tonumber(val);" +
+                            "return tonumber(val);" +
                         "end; " +
 
                         "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
-                        "return nil;" +
-                        "end; " +
-                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
+                            "return nil;" +
+                            "end; " +
+                            "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
                         "if (counter > 0) then " +
-                        "redis.call('pexpire', KEYS[1], ARGV[2]); " +
-                        "redis.call('set', KEYS[3], 0, 'px', ARGV[5]); " +
-                        "return 0; " +
+                            "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                            "redis.call('set', KEYS[3], 0, 'px', ARGV[5]); " +
+                            "return 0; " +
                         "else " +
-                        "redis.call('del', KEYS[1]); " +
-                        "redis.call(ARGV[4], KEYS[2], ARGV[1]); " +
-                        "redis.call('set', KEYS[3], 1, 'px', ARGV[5]); " +
+                            "redis.call('del', KEYS[1]); " +
+                            "redis.call(ARGV[4], KEYS[2], ARGV[1]); " +
+                            "redis.call('set', KEYS[3], 1, 'px', ARGV[5]); " +
                         "return 1; " +
                         "end; ",
-                Arrays.asList(getRawName(), getChannelName(), getUnlockLatchName(requestId)),
+                Arrays.asList(getRawName(),                     // KEYS[1]
+                        getChannelName(),                       // KEYS[2]
+                        getUnlockLatchName(requestId)),         // KEYS[3]
                 // param
-                LockPubSub.UNLOCK_MESSAGE,
-                internalLockLeaseTime,
-                getLockName(threadId),
-                getSubscribeService().getPublishCommand(),
-                timeout);
+                LockPubSub.UNLOCK_MESSAGE,                      // ARGV[1]
+                internalLockLeaseTime,                          // ARGV[2]
+                getLockName(threadId),                          // ARGV[3]
+                getSubscribeService().getPublishCommand(),      // ARGV[4]
+                timeout);                                       // ARGV[5]
     }
 
     @Override

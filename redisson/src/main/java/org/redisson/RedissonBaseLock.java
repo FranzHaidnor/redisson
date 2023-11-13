@@ -27,6 +27,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.decoder.MapValueDecoder;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Condition;
+import java.util.function.Supplier;
 
 /**
  * Base class for implementing distributed locks
@@ -426,6 +428,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     protected final <T> CompletionStage<T> handleNoSync(long threadId, CompletionStage<T> ttlRemainingFuture) {
         // ttl 剩余
+        /** {@link CommandAsyncService#handleNoSync(CompletionStage, Supplier)}*/
         return commandExecutor.handleNoSync(ttlRemainingFuture, () -> unlockInnerAsync(threadId));
     }
 
