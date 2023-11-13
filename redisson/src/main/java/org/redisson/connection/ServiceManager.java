@@ -249,6 +249,7 @@ public class ServiceManager {
 
     public Timeout newTimeout(TimerTask task, long delay, TimeUnit unit) {
         try {
+            // 使用 netty 的散列轮计时器创建延迟任务
             return timer.newTimeout(task, delay, unit);
         } catch (IllegalStateException e) {
             if (isShuttingDown()) {

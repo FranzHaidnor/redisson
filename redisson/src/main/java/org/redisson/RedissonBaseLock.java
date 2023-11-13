@@ -45,9 +45,13 @@ import java.util.concurrent.locks.Condition;
  */
 public abstract class RedissonBaseLock extends RedissonExpirable implements RLock {
 
+    /**
+     * 续期任务封装
+     */
     public static class ExpirationEntry {
 
         private final Map<Long, Integer> threadIds = new LinkedHashMap<>();
+        // netty 时间轮的延迟任务
         private volatile Timeout timeout;
 
         public ExpirationEntry() {
@@ -94,7 +98,11 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     private static final Logger log = LoggerFactory.getLogger(RedissonBaseLock.class);
 
-    private static final ConcurrentMap<String, ExpirationEntry> EXPIRATION_RENEWAL_MAP = new ConcurrentHashMap<>();
+    /**
+     * 到期续订 map
+     * 管理了所有的续期集合
+     */
+    private static final ConcurrentMap<String/*Redis锁的名称*/, ExpirationEntry> EXPIRATION_RENEWAL_MAP = new ConcurrentHashMap<>();
     protected long internalLockLeaseTime;
 
     final String id;
@@ -116,11 +124,12 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     private void renewExpiration() {
+        // 获取续期任务实例
         ExpirationEntry ee = EXPIRATION_RENEWAL_MAP.get(getEntryName());
         if (ee == null) {
             return;
         }
-        
+        // 创建定时任务 10 秒后执行
         Timeout task = getServiceManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -132,39 +141,53 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
                 if (threadId == null) {
                     return;
                 }
-                
+                // 执行锁续期脚本命令. 发送 netty 请求
                 CompletionStage<Boolean> future = renewExpirationAsync(threadId);
+                // 当续期任务执行完成以后
                 future.whenComplete((res, e) -> {
+                    // 如果出现异常
                     if (e != null) {
                         log.error("Can't update lock {} expiration", getRawName(), e);
                         EXPIRATION_RENEWAL_MAP.remove(getEntryName());
                         return;
                     }
-                    
+                    // 如果需求成功 true
                     if (res) {
+                        // 重新创建延迟任务继续续期
                         // reschedule itself
                         renewExpiration();
                     } else {
+                        // 取消自动续期任务
                         cancelExpirationRenewal(null);
                     }
                 });
             }
-        }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
+        }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);   // 默认 10 秒后执行
         
         ee.setTimeout(task);
     }
-    
+
+    /**
+     * 创建锁定时续期任务
+     * @param threadId 线程 id
+     */
     protected void scheduleExpirationRenewal(long threadId) {
+        // 创建一个续期任务
         ExpirationEntry entry = new ExpirationEntry();
+        // 如果不存在则向map中 PUT
         ExpirationEntry oldEntry = EXPIRATION_RENEWAL_MAP.putIfAbsent(getEntryName(), entry);
+        // 如果旧的实例不存在
         if (oldEntry != null) {
-            oldEntry.addThreadId(threadId);
+            oldEntry.addThreadId(threadId); // 给旧的实例添加线程 id
         } else {
             entry.addThreadId(threadId);
             try {
+                // Redis 锁续订到期
                 renewExpiration();
             } finally {
+                // 如果当前线程被中断
                 if (Thread.currentThread().isInterrupted()) {
+                    // 取消续期. 将续期任务实例从 EXPIRATION_RENEWAL_MAP 中移除
                     cancelExpirationRenewal(threadId);
                 }
             }
@@ -277,7 +300,12 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         return getServiceManager().execute(() -> unlockAsync0(threadId));
     }
 
+    /**
+     * 解锁异步
+     * @param threadId 线程 id
+     */
     private RFuture<Void> unlockAsync0(long threadId) {
+        // 解锁
         CompletionStage<Boolean> future = unlockInnerAsync(threadId);
         CompletionStage<Void> f = future.handle((opStatus, e) -> {
             cancelExpirationRenewal(threadId);
@@ -334,17 +362,23 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     protected abstract RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout);
 
+    /**
+     * 解锁
+     */
     protected final RFuture<Boolean> unlockInnerAsync(long threadId) {
         String id = getServiceManager().generateId();
         MasterSlaveServersConfig config = getServiceManager().getConfig();
         int timeout = (config.getTimeout() + config.getRetryInterval()) * config.getRetryAttempts();
         timeout = Math.max(timeout, 1);
+        // 解锁的实现类
+        /** {@link RedissonLock#unlockInnerAsync(long, String, int)} */
         RFuture<Boolean> r = unlockInnerAsync(threadId, id, timeout);
         CompletionStage<Boolean> ff = r.thenApply(v -> {
             CommandAsyncExecutor ce = commandExecutor;
             if (ce instanceof CommandBatchService) {
                 ce = new CommandBatchService(commandExecutor);
             }
+            // 删除锁
             ce.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.DEL, getUnlockLatchName(id));
             if (ce instanceof CommandBatchService) {
                 ((CommandBatchService) ce).executeAsync();
@@ -372,7 +406,11 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     @Override
     public RFuture<Boolean> tryLockAsync() {
-        return tryLockAsync(Thread.currentThread().getId());
+        // 获取当前的线程 id. 作为参数值
+        long tid = Thread.currentThread().getId();
+
+        /** {@link RedissonLock#tryLockAsync(long)}*/
+        return tryLockAsync(tid);
     }
 
     @Override
@@ -387,6 +425,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected final <T> CompletionStage<T> handleNoSync(long threadId, CompletionStage<T> ttlRemainingFuture) {
+        // ttl 剩余
         return commandExecutor.handleNoSync(ttlRemainingFuture, () -> unlockInnerAsync(threadId));
     }
 
