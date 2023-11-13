@@ -1,7 +1,6 @@
 package haidnor;
 
 import org.junit.jupiter.api.Test;
-import org.redisson.command.CommandAsyncService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +15,7 @@ import java.util.function.Function;
  */
 public class CompletionStageDemoTest {
 
-    static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
+    static final Logger log = LoggerFactory.getLogger(CompletionStageDemoTest.class);
 
     // 根据阶段正常完成结果的生产型（或者叫函数型） -------------------------------------------------------------------------
 
