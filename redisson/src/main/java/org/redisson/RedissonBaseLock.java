@@ -52,7 +52,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
      */
     public static class ExpirationEntry {
 
-        private final Map<Long, Integer> threadIds = new LinkedHashMap<>();
+        private final Map<Long/*线程 id*/, Integer/*计数器*/> threadIds = new LinkedHashMap<>();
         // netty 时间轮的延迟任务
         private volatile Timeout timeout;
 
@@ -76,16 +76,40 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
             }
             return threadIds.keySet().iterator().next();
         }
+
+        /*
+        在 Java 中，Map 接口提供了一个 `compute` 方法，用于根据指定的键和计算函数来执行计算操作并更新 Map 中的映射关系。`compute` 方法的作用可以总结如下：
+        1. 如果指定的键存在于 Map 中，并且对应的值不为 null，那么 `compute` 方法会使用指定的计算函数对原值进行计算，并将计算结果更新到 Map 中。
+        2. 如果指定的键存在于 Map 中，但对应的值为 null，那么 `compute` 方法不会执行计算函数，也不会更新 Map 中的映射关系。
+        3. 如果指定的键不存在于 Map 中，那么 `compute` 方法会将指定的键值对添加到 Map 中。
+
+        `compute` 方法的声明如下：
+            V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction)
+
+        其中，`key` 是要进行计算的键，`remappingFunction` 是一个计算函数，它接受键和对应的值作为参数，并返回一个新的值。这个函数将被用于计算新的值。如果计算函数返回 null，则表示将该键从 Map 中删除。
+        下面是一个简单的示例，演示了如何使用 `compute` 方法来更新 Map 中的映射关系：
+            Map<String, Integer> map = new HashMap<>();
+            map.put("A", 1);
+            map.put("B", 2);
+
+        // 对指定键进行计算操作
+        map.compute("A", (k, v) -> (v == null) ? 42 : v * 2); // 对应的值不为 null，进行计算
+        map.compute("C", (k, v) -> (v == null) ? 42 : v * 2); // 指定的键不存在，添加新的键值对
+        System.out.println(map); // 输出：{A=2, B=2, C=42}
+        ```
+        在上面的示例中，我们首先创建了一个 HashMap，并向其中放入了两个键值对。然后，我们使用 `compute` 方法对键"A"和键"C"进行计算操作。通过指定的计算函数，我们更新了键"A"对应的值，以及向 Map 中添加了新的键值对"C"。
+         */
         public synchronized void removeThreadId(long threadId) {
             threadIds.compute(threadId, (t, counter) -> {
+                // 如果计数器 == null
                 if (counter == null) {
-                    return null;
+                    return null; // 返回null
                 }
-                counter--;
-                if (counter == 0) {
-                    return null;
+                counter--; // 计数器自减
+                if (counter == 0) { // 如果计数器 =0
+                    return null; // 返回 null, 不做任何操作
                 }
-                return counter;
+                return counter; // 返回计数器的值
             });
         }
 
@@ -104,7 +128,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
      * 到期续订 map
      * 管理了所有的续期集合
      */
-    private static final ConcurrentMap<String/*Redis锁的名称*/, ExpirationEntry> EXPIRATION_RENEWAL_MAP = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String/*Redis锁的名称*/, ExpirationEntry/*延迟任务实例*/> EXPIRATION_RENEWAL_MAP = new ConcurrentHashMap<>();
     protected long internalLockLeaseTime;
 
     final String id;
@@ -135,6 +159,8 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         Timeout task = getServiceManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
+                // 每次执行续期任务之前,都判断一下 Map 中是否还存在这个任务
+                // 如果解锁了,这里就获取不到了
                 ExpirationEntry ent = EXPIRATION_RENEWAL_MAP.get(getEntryName());
                 if (ent == null) {
                     return;
@@ -180,8 +206,10 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         ExpirationEntry oldEntry = EXPIRATION_RENEWAL_MAP.putIfAbsent(getEntryName(), entry);
         // 如果旧的实例不存在
         if (oldEntry != null) {
+            // 给续期任务添加线程 id
             oldEntry.addThreadId(threadId); // 给旧的实例添加线程 id
         } else {
+            // 给续期任务添加线程 id
             entry.addThreadId(threadId);
             try {
                 // Redis 锁续订到期
@@ -208,16 +236,19 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected void cancelExpirationRenewal(Long threadId) {
+        // 尝试从 Map 中获取续期任务的实例
         ExpirationEntry task = EXPIRATION_RENEWAL_MAP.get(getEntryName());
+        // 如果获取不到,代表已经取消
         if (task == null) {
             return;
         }
-        
         if (threadId != null) {
+            // ExpirationEntry 的线程计数器中移除此线程
             task.removeThreadId(threadId);
         }
-
+        // 如果线程 id = null 或者续期任务没有线程
         if (threadId == null || task.hasNoThreads()) {
+            // 尝试取消 netty 定时任务
             Timeout timeout = task.getTimeout();
             if (timeout != null) {
                 timeout.cancel();
@@ -309,21 +340,25 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     private RFuture<Void> unlockAsync0(long threadId) {
         // 解锁
         CompletionStage<Boolean> future = unlockInnerAsync(threadId);
+        // CompletionStage.handle 产生异常以后依然会执行
         CompletionStage<Void> f = future.handle((opStatus, e) -> {
+            // 取消本机的分布式锁续期任务
             cancelExpirationRenewal(threadId);
 
+            // e != null 代表出现了异常
             if (e != null) {
                 if (e instanceof CompletionException) {
                     throw (CompletionException) e;
                 }
+                // 抛出异常
                 throw new CompletionException(e);
             }
+            // 如果返回值为空
             if (opStatus == null) {
                 IllegalMonitorStateException cause = new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
                         + id + " thread-id: " + threadId);
                 throw new CompletionException(cause);
             }
-
             return null;
         });
 

@@ -1,4 +1,4 @@
-package haidnor;
+package haidnor.javaApi;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;

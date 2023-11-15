@@ -1,4 +1,4 @@
-package haidnor;
+package haidnor.netty;
 
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;

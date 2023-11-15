@@ -1,9 +1,11 @@
-package haidnor;
+package haidnor.redisson;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.RedissonBaseLock;
 import org.redisson.RedissonLock;
 import org.redisson.api.RLock;
+
+import java.util.concurrent.TimeUnit;
 
 public class LockTest extends RedissonBaseTest {
 
@@ -20,5 +22,17 @@ public class LockTest extends RedissonBaseTest {
         /** {@link RedissonBaseLock#unlock()}*/
         lock.unlock();
     }
+
+    @Test
+    public void test_getLock_2() throws Exception {
+        RLock lock = redisson.getLock("lock");
+        /** {@link RedissonLock#tryLock(long, TimeUnit)}*/
+        if (lock.tryLock(10, TimeUnit.SECONDS)) {
+            System.out.println("do something");
+        }
+        /** {@link RedissonBaseLock#unlock()}*/
+        lock.unlock();
+    }
+
 
 }

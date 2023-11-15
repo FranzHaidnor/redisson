@@ -20,7 +20,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
+ * 异步信号量
  * @author Nikita Koksharov
  *
  */
@@ -56,6 +56,9 @@ public class AsyncSemaphore {
         listeners.clear();
     }
 
+    /**
+     * 返回结果包装器 CompletableFuture
+     */
     public CompletableFuture<Void> acquire() {
         CompletableFuture<Void> future = new CompletableFuture<>();
         listeners.add(future);

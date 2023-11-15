@@ -65,6 +65,11 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         service.timeout(promise, timeout);
     }
 
+    /**
+     * 订阅
+     * @param entryName
+     * @param channelName
+     */
     public CompletableFuture<E> subscribe(String entryName, String channelName) {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
         CompletableFuture<E> newPromise = new CompletableFuture<>();

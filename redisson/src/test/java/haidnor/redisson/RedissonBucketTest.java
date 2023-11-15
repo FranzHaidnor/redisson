@@ -1,4 +1,4 @@
-package haidnor;
+package haidnor.redisson;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.Redisson;
