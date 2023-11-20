@@ -581,7 +581,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry);
         // 执行命令
         executor.execute();
-        // 创建一个线程执行结果的包装器
+        // 创建一个线程执行结果的包装器. 用于请求同步
         return new CompletableFutureWrapper<>(mainPromise);
     }
 

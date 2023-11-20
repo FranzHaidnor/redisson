@@ -114,9 +114,11 @@ public abstract class QueueTransferTask {
         
         long delay = startTime - System.currentTimeMillis();
         if (delay > 10) {
+            // 创建本地 Netty 定时任务
             Timeout timeout = serviceManager.newTimeout(new TimerTask() {
                 @Override
                 public void run(Timeout timeout) throws Exception {
+                    // 提交任务
                     pushTask();
                     
                     TimeoutTask currentTimeout = lastTimeout.get();

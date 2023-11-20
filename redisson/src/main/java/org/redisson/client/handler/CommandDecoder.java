@@ -479,7 +479,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (parts != null) {
             parts.add(result);
         } else {
-            // 将 CommandData 中的 promise 对象设置完成的结果  data.getPromise().complete(result);
+            // k2 将 CommandData 中的 promise 对象设置完成的结果  data.getPromise().complete(result);
             completeResponse(data, result);
         }
     }

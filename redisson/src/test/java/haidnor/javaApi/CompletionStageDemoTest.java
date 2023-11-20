@@ -5,10 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.*;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.*;
 
 /**
  * CompletionStage 接口使用示例
@@ -345,13 +342,13 @@ public class CompletionStageDemoTest {
             return "hello";
 
         });
-        future.thenCompose(s -> {                                                       // 阶段1
-            sleepSeconds(3L);
-            log.info("2");
-            return new CompletableFuture<>().completeAsync(() -> {
-                return s + " world";
-            });
-        });
+//        future.thenCompose(s -> {                                                       // 阶段1
+//            sleepSeconds(3L);
+//            log.info("2");
+//            return new CompletableFuture<>().completeAsync(() -> {
+//               return s + "123131";
+//            });
+//        });
 
         log.info("result {}", future.get());
     }

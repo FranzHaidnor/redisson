@@ -15,6 +15,9 @@
  */
 package org.redisson;
 
+import org.redisson.api.RFuture;
+import org.redisson.api.RTopic;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -26,12 +29,36 @@ import java.util.concurrent.ConcurrentMap;
 public class QueueTransferService {
 
     private final ConcurrentMap<String, QueueTransferTask> tasks = new ConcurrentHashMap<>();
-    
+
+    public static void main(String[] args) {
+        ConcurrentMap<String, QueueTransferTask> tasks = new ConcurrentHashMap<>();
+
+        QueueTransferTask oldTask = tasks.putIfAbsent("name", new QueueTransferTask(null) {
+            @Override
+            protected RTopic getTopic() {
+                return null;
+            }
+
+            @Override
+            protected RFuture<Long> pushTaskAsync() {
+                return null;
+            }
+        });
+        System.out.println(oldTask);
+    }
+
     public synchronized void schedule(String name, QueueTransferTask task) {
+        // putIfAbsent 相当于.
+        // if (!map.containsKey(key))
+        //     return map.put(key, value);
+        // else
+        //     return map.get(key);
+
         QueueTransferTask oldTask = tasks.putIfAbsent(name, task);
         if (oldTask == null) {
             task.start();
         } else {
+            // 使用计数器自增
             oldTask.incUsage();
         }
     }

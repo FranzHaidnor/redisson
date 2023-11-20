@@ -39,7 +39,7 @@ import io.netty.util.NetUtil;
 import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import jdk.net.ExtendedSocketOptions;
+//import jdk.net.ExtendedSocketOptions;
 import org.redisson.api.RFuture;
 import org.redisson.client.handler.RedisChannelInitializer;
 import org.redisson.client.handler.RedisChannelInitializer.Type;
@@ -168,13 +168,14 @@ public final class RedisClient {
             SocketOption<Integer> countOption = null;
             SocketOption<Integer> idleOption = null;
             SocketOption<Integer> intervalOption = null;
-            try {
-                countOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPCOUNT").get(null);
-                idleOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPIDLE").get(null);
-                intervalOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPINTERVAL").get(null);
-            } catch (ReflectiveOperationException e) {
-                // skip
-            }
+            // 屏蔽掉，不然编译报错 jdk.net. 不存在
+//            try {
+//                countOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPCOUNT").get(null);
+//                idleOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPIDLE").get(null);
+//                intervalOption = (SocketOption<Integer>) ExtendedSocketOptions.class.getDeclaredField("TCP_KEEPINTERVAL").get(null);
+//            } catch (ReflectiveOperationException e) {
+//                 skip
+//            }
 
             if (config.getTcpKeepAliveCount() > 0 && countOption != null) {
                 bootstrap.option(NioChannelOption.of(countOption), config.getTcpKeepAliveCount());

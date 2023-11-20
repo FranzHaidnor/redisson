@@ -550,6 +550,9 @@ public class Redisson implements RedissonClient {
         if (destinationQueue == null) {
             throw new NullPointerException();
         }
+        // destinationQueue.getCodec()
+        // destinationQueue.getName()
+        // 构造函数使用了原始队列的编码器，名称
         return new RedissonDelayedQueue<V>(queueTransferService, destinationQueue.getCodec(), commandExecutor, destinationQueue.getName());
     }
 

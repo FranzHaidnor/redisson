@@ -42,15 +42,19 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     
     protected RedissonDelayedQueue(QueueTransferService queueTransferService, Codec codec, final CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        channelName = prefixName("redisson_delay_queue_channel", getRawName());
-        queueName = prefixName("redisson_delay_queue", getRawName());
-        timeoutSetName = prefixName("redisson_delay_queue_timeout", getRawName());
-        
+        channelName = prefixName("redisson_delay_queue_channel", getRawName());         // 发布订阅通道
+        queueName = prefixName("redisson_delay_queue", getRawName());                   // 队列名称
+        timeoutSetName = prefixName("redisson_delay_queue_timeout", getRawName());      // 延迟队列的名称
+
+        // 创建抽象类对象实例，实现方法
         QueueTransferTask task = new QueueTransferTask(commandExecutor.getServiceManager()) {
-            
+
+            // 提交任务
             @Override
             protected RFuture<Long> pushTaskAsync() {
                 return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                        // https://redis.com.cn/commands/zrangebyscore.html
+                        // 通过分数返回有序集合指定区间内的成员
                         "local expiredValues = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
                       + "if #expiredValues > 0 then "
                           + "for i, v in ipairs(expiredValues) do "
@@ -66,16 +70,21 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                          + "return v[2]; "
                       + "end "
                       + "return nil;",
-                      Arrays.asList(getRawName(), timeoutSetName, queueName),
-                      System.currentTimeMillis(), 100);
+                      Arrays.asList(
+                              getRawName(),         // KEYS[1]
+                              timeoutSetName,       // KEYS[2]
+                              queueName),           // KEYS[3]
+                      System.currentTimeMillis(),      // v[1]
+                        100);                                  // v[2]
             }
             
             @Override
             protected RTopic getTopic() {
+                // 创建原始数据
                 return RedissonTopic.createRaw(LongCodec.INSTANCE, commandExecutor, channelName);
             }
         };
-        
+        // 队列传输服务
         queueTransferService.schedule(queueName, task);
         
         this.queueTransferService = queueTransferService;

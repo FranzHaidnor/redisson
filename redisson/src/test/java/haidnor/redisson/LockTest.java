@@ -3,6 +3,8 @@ package haidnor.redisson;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedissonBaseLock;
 import org.redisson.RedissonLock;
+import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RLock;
 
 import java.util.concurrent.TimeUnit;

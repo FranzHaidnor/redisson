@@ -71,7 +71,7 @@ public class RedisExecutor<V, R> {
     final RedisCommand<V> command;
     // 指令参数
     final Object[] params;
-    // 主任务
+    // 主任务包装器,用于同步
     final CompletableFuture<R> mainPromise;
     // 是否忽略重定向
     final boolean ignoreRedirect;

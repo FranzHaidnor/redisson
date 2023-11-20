@@ -104,7 +104,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
 
         if (type == Type.PLAIN) {
             // 指令队列 (IN & OUT)
-            ch.pipeline().addLast(new CommandsQueue());
+            ch.pipeline().addLast(new CommandsQueue());  // 将命令存入命令队列中
         } else {
             ch.pipeline().addLast(new CommandsQueuePubSub());
         }
@@ -116,7 +116,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
 
         if (type == Type.PLAIN) {
             // 命令解码器 IN
-            ch.pipeline().addLast(new CommandDecoder(config.getAddress().getScheme()));
+            ch.pipeline().addLast(new CommandDecoder(config.getAddress().getScheme())); // 取出命令队列
         } else {
             ch.pipeline().addLast(new CommandPubSubDecoder(config));
         }
