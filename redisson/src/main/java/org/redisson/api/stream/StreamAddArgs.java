@@ -87,7 +87,7 @@ public interface StreamAddArgs<K, V> {
      *
      * @param k 1 - 1st key to add
      * @param v1 - 1st value to add
-     * @param k2 - 2nd key to add
+     * @param k 2 - 2nd key to add
      * @param v2 - 2nd value to add
      * @param <K> - key type
      * @param <V> - value type
@@ -105,7 +105,7 @@ public interface StreamAddArgs<K, V> {
      *
      * @param k 1 - 1st key to add
      * @param v1 - 1st value to add
-     * @param k2 - 2nd key to add
+     * @param k 2 - 2nd key to add
      * @param v2 - 2nd value to add
      * @param k3 - 3rd key to add
      * @param v3 - 3rd value to add
@@ -126,7 +126,7 @@ public interface StreamAddArgs<K, V> {
      *
      * @param k 1 - 1st key to add
      * @param v1 - 1st value to add
-     * @param k2 - 2nd key to add
+     * @param k 2 - 2nd key to add
      * @param v2 - 2nd value to add
      * @param k3 - 3rd key to add
      * @param v3 - 3rd value to add
@@ -150,7 +150,7 @@ public interface StreamAddArgs<K, V> {
      *
      * @param k 1 - 1st key to add
      * @param v1 - 1st value to add
-     * @param k2 - 2nd key to add
+     * @param k 2 - 2nd key to add
      * @param v2 - 2nd value to add
      * @param k3 - 3rd key to add
      * @param v3 - 3rd value to add

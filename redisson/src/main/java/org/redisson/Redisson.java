@@ -63,12 +63,15 @@ public class Redisson implements RedissonClient {
     // 响应集合
     protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
 
+    /**
+     * k1 创建 Redisson 实例
+     */
     protected Redisson(Config config) {
         this.config = config;
         // 复制配置信息对象
         Config configCopy = new Config(config);
 
-        // 创建连接管理器
+        // 1.创建连接管理器
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         // Redisson 对象建造者
         RedissonObjectBuilder objectBuilder = null;
@@ -77,7 +80,7 @@ public class Redisson implements RedissonClient {
             // Redisson 对象建造者
             objectBuilder = new RedissonObjectBuilder(this);
         }
-        // 命令异步执行器
+        // 2.命令异步执行器
         commandExecutor = new CommandAsyncService(connectionManager, objectBuilder, RedissonObjectBuilder.ReferenceType.DEFAULT);
         // 定时删除执行器
         evictionScheduler = new EvictionScheduler(commandExecutor);

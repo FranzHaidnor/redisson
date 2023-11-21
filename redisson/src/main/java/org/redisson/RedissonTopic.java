@@ -28,6 +28,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandAsyncService;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
@@ -168,12 +169,15 @@ public class RedissonTopic implements RTopic {
 
     @Override
     public RFuture<Void> removeListenerAsync(Integer... listenerIds) {
+        // 异步取消订阅
         CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, channelName, listenerIds);
         return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public void removeListener(Integer... listenerIds) {
+        // get方法同步执行
+        /** {@link CommandAsyncService#get(CompletableFuture)}*/
         commandExecutor.get(removeListenerAsync(listenerIds).toCompletableFuture());
     }
 

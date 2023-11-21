@@ -49,6 +49,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    /**
+     * 多个 Redis 客户端连接实例
+     */
     protected final Queue<ClientConnectionsEntry> entries = new ConcurrentLinkedQueue<>();
 
     final ConnectionManager connectionManager;

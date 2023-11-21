@@ -839,6 +839,7 @@ public class PublishSubscribeService {
     }
 
     public CompletableFuture<Void> removeListenerAsync(PubSubType type, ChannelName channelName, Integer... listenerIds) {
+        // 异步取消监听
         return removeListenerAsync(type, channelName, entry -> {
             for (int id : listenerIds) {
                 entry.removeListener(channelName, id);

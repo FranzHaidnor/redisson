@@ -23,6 +23,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandAsyncService;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.misc.CompletableFutureWrapper;
 
@@ -77,6 +78,8 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
     @Override
     public RFuture<V> takeAsync() {
+        // https://redis.com.cn/commands/blpop.html
+        // Redis BLPOP 命令移出并获取列表的第一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。它是 LPOP 的阻塞版本。
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BLPOP_VALUE, getRawName(), 0);
     }
 
@@ -86,7 +89,11 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
      */
     @Override
     public V take() throws InterruptedException {
-        return commandExecutor.getInterrupted(takeAsync());
+        // 发送 BLPOP 命令
+        RFuture<V> future = takeAsync();
+
+        /** {@link CommandAsyncService#getInterrupted(RFuture)}*/
+        return commandExecutor.getInterrupted(future);
     }
 
     @Override

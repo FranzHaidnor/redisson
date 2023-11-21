@@ -191,9 +191,9 @@ public class ConfigSupport {
     }
 
     public static ConnectionManager createConnectionManager(Config configCopy) {
-        // 创建连接管理器
         ServiceManager serviceManager = new ServiceManager(configCopy);
 
+        // 创建连接管理器
         ConnectionManager cm = null;
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());

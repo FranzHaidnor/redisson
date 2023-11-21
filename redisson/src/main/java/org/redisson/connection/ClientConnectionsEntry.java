@@ -34,30 +34,38 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * 客户端连接实例
+ * Redis 连接实例. 一个 ClientConnectionsEntry 管理一个 Redis 节点多个连接
+ * 因此这个类有一个 Redis 节点类型
  *
  * @author Nikita Koksharov
- *
  */
 public class ClientConnectionsEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
 
+    // 所有的订阅连接
     private final Queue<RedisPubSubConnection> allSubscribeConnections = new ConcurrentLinkedQueue<>();
+    // 空闲的订阅连接
     private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<>();
-    // 异步信号量
+    // 空闲发布订阅连接计数器
     private final AsyncSemaphore freeSubscribeConnectionsCounter;
-
+    // 所有的连接
     private final Queue<RedisConnection> allConnections = new ConcurrentLinkedQueue<>();
+    // 空闲的连接
     private final Deque<RedisConnection> freeConnections = new ConcurrentLinkedDeque<>();
+    // 空闲连接计数器
     private final AsyncSemaphore freeConnectionsCounter;
-
+    // 冻结原因
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
-
     private volatile FreezeReason freezeReason;
+
     final RedisClient client;
 
+    /**
+     * Redis 节点类型
+     */
     private volatile NodeType nodeType;
+
     private final IdleConnectionWatcher idleConnectionWatcher;
 
     private final MasterSlaveServersConfig config;

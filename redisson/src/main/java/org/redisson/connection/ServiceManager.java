@@ -121,8 +121,14 @@ public class ServiceManager {
 
     private final Config cfg;
 
+    /**
+     * 主从服务器配置
+     */
     private MasterSlaveServersConfig config;
 
+    /**
+     * netty 的哈希轮定时器
+     */
     private HashedWheelTimer timer;
 
     private IdleConnectionWatcher connectionWatcher;
@@ -241,6 +247,7 @@ public class ServiceManager {
         }
 
         // hash 轮定时器
+        // 时针走动一次的间隔时间是 100 毫秒, 时间轮总共 1024 个时刻度,
         timer = new HashedWheelTimer(new DefaultThreadFactory("redisson-timer"), minTimeout, TimeUnit.MILLISECONDS, 1024, false);
 
         // 空闲连接观察者

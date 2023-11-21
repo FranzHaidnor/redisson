@@ -145,6 +145,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public <V> V getInterrupted(RFuture<V> future) throws InterruptedException {
         try {
+            // 同步获取
             return future.toCompletableFuture().get();
         } catch (InterruptedException e) {
             future.toCompletableFuture().completeExceptionally(e);

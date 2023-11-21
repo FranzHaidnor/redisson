@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -96,6 +96,12 @@ public class RedisPubSubConnection extends RedisConnection {
         return async(promise, new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channels);
     }
 
+    /**
+     * k1 订阅 Redis
+     * 订阅多个 Redis 通道
+     * @param codec 编解码器
+     * @param channels 订阅的通道信息
+     */
     public ChannelFuture subscribe(Codec codec, ChannelName... channels) {
         for (ChannelName ch : channels) {
             this.channels.put(ch, codec);
@@ -150,18 +156,18 @@ public class RedisPubSubConnection extends RedisConnection {
         });
         return future;
     }
-    
+
     public void removeDisconnectListener(ChannelName channel) {
         unsubscribedChannels.remove(channel);
     }
-    
+
     @Override
     public void fireDisconnected() {
         super.fireDisconnected();
 
         unsubscribedChannels.forEach((key, value) -> onMessage(new PubSubStatusMessage(value, key)));
     }
-    
+
     private <T, R> ChannelFuture async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object... params) {
         CompletableFuture<Void> promise = new CompletableFuture<>();
         return channel.writeAndFlush(new CommandData<>(promise, messageDecoder, null, command, params));

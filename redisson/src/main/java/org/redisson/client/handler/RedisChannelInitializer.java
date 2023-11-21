@@ -88,13 +88,15 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         initSsl(config, ch);
 
         if (type == Type.PLAIN) {
-            // 连接处理器 IN
+            // 连接处理器 InboundHandler
             ch.pipeline().addLast(new RedisConnectionHandler(redisClient));
-        } else {
+        }
+        // 发布订阅类型的 InboundHandler
+        else {
             ch.pipeline().addLast(new RedisPubSubConnectionHandler(redisClient));
         }
 
-        // 连接看门狗 IN
+        // 连接看门狗 InboundHandler
         ch.pipeline().addLast(connectionWatchdog);
         // 请求指令编码器 OUT
         ch.pipeline().addLast(new CommandEncoder(config.getCommandMapper()));
@@ -105,19 +107,23 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         if (type == Type.PLAIN) {
             // 指令队列 (IN & OUT)
             ch.pipeline().addLast(new CommandsQueue());  // 将命令存入命令队列中
-        } else {
+        }
+        // 发布订阅类型的 InboundHandler
+        else {
             ch.pipeline().addLast(new CommandsQueuePubSub());
         }
 
         if (pingConnectionHandler != null) {
-            //  连接检测处理器 IN
+            //  连接检测处理器 InboundHandler
             ch.pipeline().addLast(pingConnectionHandler);
         }
 
         if (type == Type.PLAIN) {
-            // 命令解码器 IN
+            // 命令解码器 InboundHandler
             ch.pipeline().addLast(new CommandDecoder(config.getAddress().getScheme())); // 取出命令队列
-        } else {
+        }
+        // 发布订阅类型的 InboundHandler
+        else {
             ch.pipeline().addLast(new CommandPubSubDecoder(config));
         }
 

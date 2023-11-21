@@ -30,32 +30,12 @@ public class QueueTransferService {
 
     private final ConcurrentMap<String, QueueTransferTask> tasks = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) {
-        ConcurrentMap<String, QueueTransferTask> tasks = new ConcurrentHashMap<>();
-
-        QueueTransferTask oldTask = tasks.putIfAbsent("name", new QueueTransferTask(null) {
-            @Override
-            protected RTopic getTopic() {
-                return null;
-            }
-
-            @Override
-            protected RFuture<Long> pushTaskAsync() {
-                return null;
-            }
-        });
-        System.out.println(oldTask);
-    }
-
     public synchronized void schedule(String name, QueueTransferTask task) {
-        // putIfAbsent 相当于.
-        // if (!map.containsKey(key))
-        //     return map.put(key, value);
-        // else
-        //     return map.get(key);
-
+        // 返回值 与指定键关联的前一个值；如果该键没有映射，则返回null 。 （如果实现支持 null 值，则null返回还可以指示映射先前将null与键关联。）
         QueueTransferTask oldTask = tasks.putIfAbsent(name, task);
+        // 如果之前 map 中没有
         if (oldTask == null) {
+            // 则把这次放进去的任务启动
             task.start();
         } else {
             // 使用计数器自增
@@ -68,6 +48,7 @@ public class QueueTransferService {
         if (task != null) {
             if (task.decUsage() == 0) {
                 tasks.remove(name, task);
+                // 停止任务
                 task.stop();
             }
         }

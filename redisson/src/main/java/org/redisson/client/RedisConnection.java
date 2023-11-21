@@ -40,7 +40,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
+ * 封装了 RedisClient
  * @author Nikita Koksharov
  *
  */

@@ -64,9 +64,13 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class RedisClient {
 
     private final AtomicReference<CompletableFuture<InetSocketAddress>> resolvedAddrFuture = new AtomicReference<>();
-    // netty 客户端启动引导器
+    /**
+     * netty 客户端启动引导器
+     */
     private final Bootstrap bootstrap;
-    // netty 发布订阅客户端启动引导器
+    /**
+     * netty 发布订阅客户端启动引导器
+     */
     private final Bootstrap pubSubBootstrap;
     private final RedisURI uri;
     private InetSocketAddress resolvedAddr;
@@ -88,8 +92,9 @@ public final class RedisClient {
     private Runnable connectedListener;
     private Runnable disconnectedListener;
 
-
-    // 使用静态方法创建
+    /**
+     * k1 创建 Redis 客户端连接
+     */
     public static RedisClient create(RedisClientConfig config) {
         return new RedisClient(config);
     }
@@ -102,14 +107,17 @@ public final class RedisClient {
             copy.setTimer(new HashedWheelTimer());
             hasOwnTimer = true;
         }
+        // netty 事件处理组
         if (copy.getGroup() == null) {
             copy.setGroup(new NioEventLoopGroup());
             hasOwnGroup = true;
         }
+        // 处理任务的线程池
         if (copy.getExecutor() == null) {
             copy.setExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2));
             hasOwnExecutor = true;
         }
+        // 解析器组
         if (copy.getResolverGroup() == null) {
             if (config.getSocketChannelClass() == EpollSocketChannel.class) {
                 copy.setResolverGroup(new DnsAddressResolverGroup(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault()));
@@ -133,11 +141,12 @@ public final class RedisClient {
         }
         // EventLoop
         channels = new DefaultChannelGroup(copy.getGroup().next());
-        // 创建启动引导器
+
+        // 创建 Netty 客户端启动引导器
         bootstrap = createBootstrap(copy, Type.PLAIN);
-        // 发布订阅客户端启动引导器
+        // 创建 Netty 发布订阅客户端启动引导器
         pubSubBootstrap = createBootstrap(copy, Type.PUBSUB);
-        
+
         this.commandTimeout = copy.getCommandTimeout();
     }
 
@@ -234,9 +243,13 @@ public final class RedisClient {
     public Timer getTimer() {
         return timer;
     }
-    
+
+    /**
+     * 创建 Redis 客户端连接
+     */
     public RedisConnection connect() {
         try {
+            // join 和 get 方法作用一样, 但 join 不用强制要求捕获异常
             return connectAsync().toCompletableFuture().join();
         } catch (CompletionException e) {
             if (e.getCause() instanceof RedisException) {
@@ -333,6 +346,10 @@ public final class RedisClient {
         return new CompletableFutureWrapper<>(f);
     }
 
+    /**
+     * 创建发布订阅的 netty 连接.
+     * channel 连接好以后并没有发送 SUBSCRIBE 命令订阅具体的 topic
+     */
     public RedisPubSubConnection connectPubSub() {
         try {
             return connectPubSubAsync().toCompletableFuture().join();
@@ -349,6 +366,7 @@ public final class RedisClient {
         CompletableFuture<InetSocketAddress> nameFuture = resolveAddr();
         CompletableFuture<RedisPubSubConnection> f = nameFuture.thenCompose(res -> {
             CompletableFuture<RedisPubSubConnection> r = new CompletableFuture<>();
+            // 创建连接通道
             ChannelFuture channelFuture = pubSubBootstrap.connect(res);
             channelFuture.addListener(new ChannelFutureListener() {
                 @Override

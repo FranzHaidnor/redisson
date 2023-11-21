@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2022 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,12 +36,13 @@ import java.util.function.Supplier;
 
 /**
  * redis 命令异步执行器
+ *
  * @author Nikita Koksharov
  */
 public interface CommandAsyncExecutor {
 
     RedissonObjectBuilder getObjectBuilder();
-    
+
     ConnectionManager getConnectionManager();
 
     ServiceManager getServiceManager();
@@ -61,15 +62,20 @@ public interface CommandAsyncExecutor {
     <V> V get(RFuture<V> future);
 
     <V> V get(CompletableFuture<V> future);
-    
+
     <V> V getInterrupted(RFuture<V> future) throws InterruptedException;
 
+    /**
+     * 这段代码看起来是 Java 中的方法签名。根据这个方法签名来看，这个方法接受一个 CompletableFuture 对象作为参数，然后尝试获取这个 CompletableFuture 对象的结果值，并且如果被中断的话会抛出 InterruptedException 异常。
+     * <p>
+     * 在这个方法中，使用 CompletableFuture 对象可能是为了异步执行某些任务，然后通过 getInterrupted 方法来获取异步任务的结果值。而抛出 InterruptedException 则是为了处理线程中断的情况。
+     */
     <V> V getInterrupted(CompletableFuture<V> future) throws InterruptedException;
 
     <T, R> RFuture<R> writeAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params);
 
     <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
-    
+
     <T, R> RFuture<R> writeAsync(byte[] key, Codec codec, RedisCommand<T> command, Object... params);
 
     <T, R> RFuture<R> writeAsync(ByteBuf key, Codec codec, RedisCommand<T> command, Object... params);
@@ -131,8 +137,7 @@ public interface CommandAsyncExecutor {
     /**
      * 异步执行
      */
-    <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec,
-                            RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry);
+    <V, R> RFuture<R> async(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry);
 
     <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<?> command, long secondsTimeout, String... queueNames);
 

@@ -54,10 +54,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private MasterSlaveEntry masterSlaveEntry;
 
+    /**
+     * 发布订阅服务
+     */
     protected final PublishSubscribeService subscribeService;
 
+    /**
+     * 服务管理者
+     */
     protected final ServiceManager serviceManager;
-
+    /**
+     * 节点连接
+     */
     private final Map<RedisURI, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
 
     protected volatile boolean isConnected;
@@ -83,8 +91,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
 
         serviceManager.setConfig(this.config);
+        // 初始化 netty 哈希轮定时器
         serviceManager.initTimer();
-        // 发布订阅服务
+        // 创建发布订阅服务
         subscribeService = new PublishSubscribeService(this);
     }
 
@@ -189,15 +198,19 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public final void connect() throws InterruptedException {
+        // getRetryAttempts 获取重试次数
         int attempts = config.getRetryAttempts() + 1;
         for (int i = 0; i < attempts; i++) {
             try {
                 if (i == attempts - 1) {
                     lastAttempt = true;
                 }
+                // 连接
                 doConnect();
                 return;
-            } catch (Exception e) {
+            }
+            // 如果出现异常就重试连接
+            catch (Exception e) {
                 if (i == attempts - 1) {
                     lastAttempt = false;
                     throw e;
@@ -218,7 +231,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             // 节点没有被使使用过
             if (config.isSlaveNotUsed()) {
                 masterSlaveEntry = new SingleEntry(this, serviceManager.getConnectionWatcher(), config);
-            } else {
+            }
+            // 主从架构
+            else {
                 masterSlaveEntry = new MasterSlaveEntry(this, serviceManager.getConnectionWatcher(), config);
             }
             CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
@@ -311,6 +326,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return c;
     }
 
+    // k2 创建基础的 Redis Netty 客户端
     @Override
     public RedisClient createClient(NodeType type, RedisURI address, String sslHostname) {
         RedisClient client = createClient(type, address, config.getConnectTimeout(), config.getTimeout(), sslHostname);
@@ -324,7 +340,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected RedisClient createClient(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname) {
+        // 创建客户端配置
         RedisClientConfig redisConfig = createRedisConfig(type, address, timeout, commandTimeout, sslHostname);
+        // 创建客户端
         return RedisClient.create(redisConfig);
     }
 
