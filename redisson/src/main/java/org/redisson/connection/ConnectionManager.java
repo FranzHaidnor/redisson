@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * ConnectionManager 是管理 Redis 连接的顶级接口
+ * 实现类
+ * {@link MasterSlaveConnectionManager}
  *
  * @author Nikita Koksharov
  */
@@ -47,9 +49,7 @@ public interface ConnectionManager { // 连接管理器
      */
     RedisURI getLastClusterNode();
 
-    /**
-     * 是否为集群模式
-     */
+    // 是否为集群模式
     boolean isClusterMode();
 
     /**
@@ -105,7 +105,7 @@ public interface ConnectionManager { // 连接管理器
     void shutdown(long quietPeriod, long timeout, TimeUnit unit);
 
     /**
-     * 获取连接管理器
+     * 获取服务管理者
      */
     ServiceManager getServiceManager();
 

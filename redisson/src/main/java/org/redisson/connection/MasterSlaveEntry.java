@@ -135,6 +135,7 @@ public class MasterSlaveEntry {
 
     public CompletableFuture<RedisClient> setupMasterEntry(RedisURI address, String sslHostname) {
         RedisClient client = connectionManager.createClient(NodeType.MASTER, address, sslHostname);
+        // 设置主节点实体
         return setupMasterEntry(client);
     }
 
@@ -160,6 +161,7 @@ public class MasterSlaveEntry {
                 return CompletableFuture.completedFuture(null);
             }
 
+            // 初始化连接池
             CompletableFuture<Void> writeFuture = writeConnectionPool.initConnections(masterEntry);
             futures.add(writeFuture);
 

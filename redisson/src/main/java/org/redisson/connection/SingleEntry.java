@@ -23,7 +23,7 @@ import org.redisson.misc.RedisURI;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 
+ * 单节点实体
  * @author Nikita Koksharov
  *
  */

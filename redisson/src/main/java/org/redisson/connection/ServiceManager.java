@@ -131,6 +131,9 @@ public class ServiceManager {
      */
     private HashedWheelTimer timer;
 
+    /**
+     * 空闲连接监视器
+     */
     private IdleConnectionWatcher connectionWatcher;
 
     private final Promise<Void> shutdownPromise = ImmediateEventExecutor.INSTANCE.newPromise();
@@ -235,7 +238,7 @@ public class ServiceManager {
     }
 
     public void initTimer() {
-        int[] timeouts = new int[]{config.getRetryInterval(), config.getTimeout()};
+        int[] timeouts = new int[]{config.getRetryInterval()/*重试间隔时间毫秒*/, config.getTimeout()/*超时时间*/};
         Arrays.sort(timeouts);
         int minTimeout = timeouts[0];
         if (minTimeout % 100 != 0) {

@@ -133,12 +133,13 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
 
     @Override
     public RFuture<Long> publishAsync(Object message) {
+        // https://redis.com.cn/commands/xadd.html
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "redis.call('xadd', KEYS[1], '*', 'm', ARGV[1]); "
                     + "local v = redis.call('xinfo', 'groups', KEYS[1]); "
                     + "return #v;",
-                Arrays.asList(getRawName()),
-                encode(message));
+                Arrays.asList(getRawName()),    // KEYS[1]
+                encode(message));      //   ARGV[1]
     }
 
     @Override
@@ -155,8 +156,12 @@ public class RedissonReliableTopic extends RedissonExpirable implements RReliabl
         RFuture<Void> addFuture = commandExecutor.evalWriteNoRetryAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                           "redis.call('zadd', KEYS[2], ARGV[3], ARGV[2]);" +
                                 "redis.call('xgroup', 'create', KEYS[1], ARGV[2], ARGV[1], 'MKSTREAM'); ",
-                Arrays.asList(getRawName(), getTimeout()),
-        StreamMessageId.ALL, subscriberId, System.currentTimeMillis() + getServiceManager().getCfg().getReliableTopicWatchdogTimeout());
+                Arrays.asList(getRawName(),
+                        getTimeout()),
+        StreamMessageId.ALL,
+                subscriberId,   // 订阅者Id
+                System.currentTimeMillis() + getServiceManager().getCfg().getReliableTopicWatchdogTimeout());
+
         CompletionStage<String> f = addFuture.thenApply(r -> {
             poll(subscriberId);
             return id;

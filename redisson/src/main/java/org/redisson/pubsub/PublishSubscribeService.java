@@ -158,6 +158,7 @@ public class PublishSubscribeService {
         return getPubSubEntry(channelName) != null;
     }
 
+    // 订阅
     public CompletableFuture<Collection<PubSubConnectionEntry>> psubscribe(ChannelName channelName, Codec codec, RedisPubSubListener<?>... listeners) {
         if (isMultiEntity(channelName)) {
             Collection<MasterSlaveEntry> entrySet = connectionManager.getEntrySet();

@@ -15,10 +15,7 @@
  */
 package org.redisson.connection;
 
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
-import org.redisson.config.SingleServerConfig;
-import org.redisson.config.SubscriptionMode;
+import org.redisson.config.*;
 
 /**
  *

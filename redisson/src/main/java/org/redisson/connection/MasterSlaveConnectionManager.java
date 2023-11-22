@@ -52,6 +52,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected MasterSlaveServersConfig config;
 
+    /**
+     * 主从节点实体
+     * 这个对象很重要, 它管理了 Redis 的连接
+     */
     private MasterSlaveEntry masterSlaveEntry;
 
     /**
@@ -164,6 +168,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public Collection<MasterSlaveEntry> getEntrySet() {
+        // 懒加载连接
         lazyConnect();
 
         if (masterSlaveEntry != null) {
@@ -185,6 +190,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
 
         try {
+            // 创建连接
             connect();
             f.complete(null);
         } catch (InterruptedException e) {
